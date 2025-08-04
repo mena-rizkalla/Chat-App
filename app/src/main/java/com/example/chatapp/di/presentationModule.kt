@@ -16,5 +16,5 @@ val presentationModule = module {
     viewModel { UsersViewModel(get(), get()) }
     // We pass parameters to ChatViewModel from the navigation graph
     viewModel { params -> ChatViewModel(receiverId = params.get(), get(), get(), get()) }
-    viewModel { GlobalChatViewModel(get(), get(), get()) }
+    viewModel { GlobalChatViewModel(get(), get(), get(), get()) }
 }
