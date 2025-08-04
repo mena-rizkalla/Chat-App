@@ -1,5 +1,6 @@
 package com.example.chatapp.presentation.loginScreen
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
@@ -23,6 +24,11 @@ class LoginViewModel(
     }
 
     fun signIn(onSuccess: () -> Unit) {
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(uiState.value.email).matches()) {
+            _uiState.value = _uiState.value.copy(error = "Please enter a valid email address.")
+            return
+        }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val result = signInUseCase(uiState.value.email, uiState.value.password)
