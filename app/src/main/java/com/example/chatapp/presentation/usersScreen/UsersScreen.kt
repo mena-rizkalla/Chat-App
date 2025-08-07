@@ -47,6 +47,9 @@ fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinVi
         onGoToGlobalChatClick = {
             navController.navigate(Screen.GlobalChatScreen.route)
         },
+        onGoToAiChatClick = {
+            navController.navigate(Screen.AiChatScreen.route)
+        },
         onChatClick = { receiverName, receiverId ->
             navController.navigate(
                 Screen.ChatScreen.createRoute(
@@ -62,7 +65,8 @@ fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinVi
 private fun UsersScreenContent(
     state: UsersState,
     onChatClick: (receiverName: String, receiverId: String) -> Unit,
-    onGoToGlobalChatClick: () -> Unit
+    onGoToGlobalChatClick: () -> Unit,
+    onGoToAiChatClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -84,6 +88,18 @@ private fun UsersScreenContent(
                     fontSize = 32.sp,
                     color = Color(0xFF1D1D1D)
                 )
+
+                Icon(
+                    modifier = Modifier
+                        .padding(end = 20.dp)
+                        .clickable {
+                            onGoToAiChatClick()
+                        },
+                    painter = painterResource(R.drawable.baseline_adb_24),
+                    contentDescription = "Text with Gemini",
+                    tint = Color.Unspecified
+                )
+
                 Icon(
                     modifier = Modifier
                         .padding(end = 20.dp)
@@ -148,6 +164,7 @@ fun UsersScreenPreview() {
     UsersScreenContent(
         state = UsersState(),
         onChatClick = { _, _ -> },
+        onGoToAiChatClick = {},
         onGoToGlobalChatClick = {}
     )
 }
