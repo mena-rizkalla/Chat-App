@@ -1,3 +1,16 @@
+
+fun getApiKey(projectRootDir: File): String {
+    val localPropertiesFile = File(projectRootDir, "local.properties")
+    if (!localPropertiesFile.exists()) {
+        println("local.properties file not found in root directory.")
+        return ""
+    }
+    val lines = localPropertiesFile.readLines()
+    val keyLine = lines.firstOrNull { it.startsWith("GEMINI_API_KEY") }
+    return keyLine?.split("=")?.getOrNull(1)?.trim() ?: ""
+}
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,6 +30,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+
+        buildConfigField("String", "GEMINI_API_KEY",  getApiKey(rootProject.rootDir))
     }
 
     buildTypes {
@@ -37,8 +54,11 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
+
+
 
 dependencies {
 
@@ -67,5 +87,7 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.navigation.compose)
+
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
 }

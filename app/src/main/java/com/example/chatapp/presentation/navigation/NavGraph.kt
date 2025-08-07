@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
+import com.example.chatapp.presentation.ai_chat.AiChatScreen
 import com.example.chatapp.presentation.chatScreen.ChatScreen
 import com.example.chatapp.presentation.forgetPasswordScreen.ForgotPasswordScreen
 import com.example.chatapp.presentation.globalChatScreen.GlobalChatScreen
@@ -49,6 +50,9 @@ fun NavGraph(
                 receiverId = receiverId,
                 receiverName = receiverName
             )
+        }
+        composable(Screen.AiChatScreen.route) {
+            AiChatScreen(navController = navController)
         }
     }
 }

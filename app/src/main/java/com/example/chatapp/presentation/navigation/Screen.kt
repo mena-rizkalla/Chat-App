@@ -9,4 +9,6 @@ sealed class Screen(val route: String) {
         fun createRoute(receiverId: String, receiverName: String) = "chat_screen/$receiverId/$receiverName"
     }
     object GlobalChatScreen : Screen("global_chat_screen")
+
+    object AiChatScreen : Screen("ai_chat_screen")
 }
