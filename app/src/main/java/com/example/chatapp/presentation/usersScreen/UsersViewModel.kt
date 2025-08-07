@@ -2,15 +2,18 @@ package com.example.chatapp.presentation.usersScreen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
 import com.example.chatapp.domain.authUseCases.SignOutUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class UsersViewModel(
     private val getUsersUseCase: GetUsersUseCase,
-    private val signOutUseCase: SignOutUseCase
+    private val signOutUseCase: SignOutUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UsersState())
     val uiState = _uiState.asStateFlow()
@@ -24,6 +27,13 @@ class UsersViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
             getUsersUseCase().onSuccess { users ->
                 _uiState.value = _uiState.value.copy(users = users, isLoading = false)
+                getCurrentUserUseCase()?.let { user ->
+                    _uiState.update {
+                        it.copy(
+                            currentUser = user
+                        )
+                    }
+                }
             }.onFailure {
                 _uiState.value = _uiState.value.copy(error = it.message, isLoading = false)
             }
