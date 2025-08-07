@@ -49,7 +49,7 @@ fun MessageBubble(uiMessage: UiMessage, isFromCurrentUser: Boolean) {
                 Text(
                     text = uiMessage.senderDisplayName,
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = Color(0xFF696969),
                     modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
                 )
             }
