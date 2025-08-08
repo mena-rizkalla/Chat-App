@@ -1,25 +1,37 @@
 package com.example.chatapp.presentation.usersScreen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,9 +48,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.chatapp.R
+import com.example.chatapp.domain.model.User
 import com.example.chatapp.presentation.navigation.Screen
+import com.example.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
@@ -61,6 +76,7 @@ fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinVi
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun UsersScreenContent(
     state: UsersState,
@@ -68,104 +84,104 @@ private fun UsersScreenContent(
     onGoToGlobalChatClick: () -> Unit,
     onGoToAiChatClick: () -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-    ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Chats", style = MaterialTheme.typography.headlineMedium) },
+                actions = {
+                    IconButton(onClick = onGoToAiChatClick) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Chat with Gemini")
+                    }
+                    IconButton(onClick = onGoToGlobalChatClick) {
+                        Icon(Icons.Default.Person, contentDescription = "Global Chat")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            val welcomeMessage = "Welcome, ${state.currentUser.displayName.ifBlank { "User" }}!"
+            item {
                 Text(
-                    modifier = Modifier.padding(bottom = 8.dp, start = 20.dp),
-                    text = "Hey There ${if (state.currentUser.displayName != "") state.currentUser.displayName else ""} :)",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 32.sp,
-                    color = Color(0xFF1D1D1D)
-                )
-
-                Icon(
-                    modifier = Modifier
-                        .padding(end = 20.dp)
-                        .clickable {
-                            onGoToAiChatClick()
-                        },
-                    painter = painterResource(R.drawable.baseline_adb_24),
-                    contentDescription = "Text with Gemini",
-                    tint = Color.Unspecified
-                )
-
-                Icon(
-                    modifier = Modifier
-                        .padding(end = 20.dp)
-                        .clickable {
-                        onGoToGlobalChatClick()
-                    },
-                    painter = painterResource(R.drawable.messages_2),
-                    contentDescription = "Global Chat",
-                    tint = Color.Unspecified
+                    text = welcomeMessage,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
-            HorizontalDivider(
-                modifier = Modifier.padding(bottom = 43.dp)
-            )
-        }
-        items(state.users) { user ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp, start = 24.dp)
-                    .clickable {
-                        onChatClick(
-                            user.displayName,
-                            user.uid
-                        )
+            items(state.users, key = { it.uid }) { user ->
+                UserListItem(
+                    user = user,
+                    onClick = {
+                        onChatClick(user.displayName, user.uid)
                     },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .size(70.dp)
-                        .paint(
-                            painter = painterResource(R.drawable.img_empty_user_pic),
-                            contentScale = ContentScale.Crop
-                        )
+                    modifier = Modifier.animateItem()
                 )
-                Column {
-                    Text(
-                        modifier = Modifier.padding(start = 23.dp),
-                        text = user.email,
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 14.sp,
-                        color = Color(0xFF696969)
-                    )
-                    Text(
-                        modifier = Modifier.padding(start = 23.dp),
-                        text = user.displayName,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 24.sp,
-                        color = Color(0xFF1D1D1D)
-                    )
-                }
             }
         }
     }
 }
 
-@Preview
+@Composable
+fun UserListItem(user: User, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.clickable(onClick = onClick)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = user.displayName.firstOrNull()?.toString() ?: "U",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = user.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = user.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        HorizontalDivider(modifier = Modifier.padding(start = 88.dp, end = 16.dp))
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 fun UsersScreenPreview() {
-    UsersScreenContent(
-        state = UsersState(),
-        onChatClick = { _, _ -> },
-        onGoToAiChatClick = {},
-        onGoToGlobalChatClick = {}
-    )
+    ChatAppTheme {
+        UsersScreenContent(
+            state = UsersState(),
+            onChatClick = { _, _ -> },
+            onGoToAiChatClick = {},
+            onGoToGlobalChatClick = {}
+        )
+    }
 }
 
