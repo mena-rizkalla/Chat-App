@@ -1,19 +1,32 @@
 package com.example.chatapp.presentation.chatScreen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -28,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -50,6 +64,7 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
 
+    // Auto-scroll to the latest message
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
@@ -59,17 +74,31 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat with $receiverName") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = receiverName.firstOrNull()?.toString() ?: "U",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text(receiverName, style = MaterialTheme.typography.titleLarge)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black.copy(alpha = 0.8f)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
         bottomBar = {
@@ -79,22 +108,23 @@ fun ChatScreen(
                 onSendClick = viewModel::sendMessage
             )
         },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    items(uiState.messages) { message ->
+                    items(uiState.messages, key = { it.messageId }) { message ->
                         MessageBubble(
+                            modifier = Modifier.animateItem(),
                             uiMessage = UiMessage(message, receiverName),
                             isFromCurrentUser = message.senderId == uiState.currentUserId,
                             onLongPress = { msgId -> selectedMessageId = msgId }
@@ -103,21 +133,22 @@ fun ChatScreen(
                 }
             }
 
-            // Show Reaction Palette when a message is selected
-            if (selectedMessageId != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 80.dp), // Adjust padding to avoid overlap with chat input
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    ReactionPalette(
-                        onReactionSelected = { reaction ->
-                            viewModel.toggleReaction(selectedMessageId!!, reaction)
-                            selectedMessageId = null // Hide palette after selection
+            // Animated Reaction Palette
+            AnimatedVisibility(
+                visible = selectedMessageId != null,
+                enter = fadeIn() + slideInVertically { it / 2 },
+                exit = slideOutVertically { it / 2 } + fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.Center)
+            ) {
+                ReactionPalette(
+                    onReactionSelected = { reaction ->
+                        selectedMessageId?.let {
+                            viewModel.toggleReaction(it, reaction)
                         }
-                    )
-                }
+                        selectedMessageId = null // Hide palette after selection
+                    }
+                )
             }
         }
     }
