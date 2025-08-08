@@ -51,7 +51,7 @@ To get this project running on your own machine, follow these steps:
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/chatapp.git](https://github.com/your-username/chatapp.git)
+    git clone [https://github.com/mena-rizkalla/chatapp.git](https://github.com/mena-rizkalla/chatapp.git)
     ```
 
 2.  **Connect to Firebase:**
