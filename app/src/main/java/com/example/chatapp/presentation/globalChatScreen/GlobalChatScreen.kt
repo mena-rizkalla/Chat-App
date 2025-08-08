@@ -23,6 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,6 +35,7 @@ import androidx.navigation.NavController
 import com.example.chatapp.domain.model.Message
 import com.example.chatapp.presentation.components.ChatInput
 import com.example.chatapp.presentation.components.MessageBubble
+import com.example.chatapp.presentation.components.ReactionPalette
 import com.example.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -43,6 +47,7 @@ fun GlobalChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    var selectedMessageId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
@@ -75,30 +80,47 @@ fun GlobalChatScreen(
         },
         containerColor = Color.White
     ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(uiState.messages) { uiMessage ->
+                        MessageBubble(
+                            uiMessage = uiMessage,
+                            isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
+                            onLongPress = { msgId -> selectedMessageId = msgId }
+                        )
+                    }
+                }
             }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(uiState.messages) { uiMessage ->
-                    MessageBubble(
-                        uiMessage = uiMessage,
-                        isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId
+
+            // Show Reaction Palette when a message is selected
+            if (selectedMessageId != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 80.dp), // Adjust padding to avoid overlap with chat input
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    ReactionPalette(
+                        onReactionSelected = { reaction ->
+                            viewModel.toggleReaction(selectedMessageId!!, reaction)
+                            selectedMessageId = null // Hide palette after selection
+                        }
                     )
                 }
             }
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
@@ -136,7 +158,9 @@ fun GlobalChatScreenPreview() {
                 items(previewUiMessages) { uiMessage ->
                     MessageBubble(
                         uiMessage = uiMessage,
-                        isFromCurrentUser = uiMessage.message.senderId == "2" // "2" is the current user in this preview
+                        isFromCurrentUser = uiMessage.message.senderId == "2",
+                        onLongPress = {},
+                        modifier = Modifier.navigationBarsPadding() ,
                     )
                 }
             }

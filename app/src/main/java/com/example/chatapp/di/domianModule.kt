@@ -10,6 +10,8 @@ import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
+import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
+import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import org.koin.dsl.module
 
@@ -30,4 +32,8 @@ val domainModule = module {
 
     //ai chat
     factory { GetGeminiResponseUseCase(get()) }
+
+    // Reactions
+    factory { TogglePrivateMessageReactionUseCase(get()) }
+    factory { ToggleGlobalMessageReactionUseCase(get()) }
 }
