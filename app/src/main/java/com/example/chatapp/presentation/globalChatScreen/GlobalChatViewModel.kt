@@ -7,6 +7,8 @@ import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
 import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
+import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
+import com.example.chatapp.domain.model.Reaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -18,7 +20,8 @@ class GlobalChatViewModel(
     private val getGlobalMessagesUseCase: GetGlobalMessagesUseCase,
     private val sendGlobalMessageUseCase: SendGlobalMessageUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val getUsersUseCase: GetUsersUseCase
+    private val getUsersUseCase: GetUsersUseCase,
+    private val toggleReactionUseCase: ToggleGlobalMessageReactionUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(GlobalChatState())
     val uiState = _uiState.asStateFlow()
@@ -78,6 +81,12 @@ class GlobalChatViewModel(
                 sendGlobalMessageUseCase(text)
                 _uiState.value = _uiState.value.copy(currentMessage = "") // Clear input
             }
+        }
+    }
+
+    fun toggleReaction(messageId: String, reaction: Reaction) {
+        viewModelScope.launch {
+            toggleReactionUseCase(messageId = messageId, reaction = reaction)
         }
     }
 }

@@ -2,8 +2,10 @@ package com.example.chatapp.data.repository
 
 import com.example.chatapp.domain.ChatRepository
 import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.Reaction
 import com.example.chatapp.domain.model.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
@@ -101,6 +103,53 @@ class ChatRepositoryImpl(
                 }
             }
         awaitClose { subscription.remove() }
+    }
+
+    override suspend fun toggleReactionOnPrivateMessage(
+        receiverId: String,
+        messageId: String,
+        reaction: Reaction
+    ): Result<Unit> {
+        val senderId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        val chatRoomId = getChatRoomId(senderId, receiverId)
+        val messageRef = firestore.collection("chats").document(chatRoomId).collection("messages").document(messageId)
+
+        return try {
+            firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(messageRef)
+                val currentReactions = snapshot.get("reactions") as? Map<String, String> ?: emptyMap()
+
+                if (currentReactions[senderId] == reaction.key) {
+                    transaction.update(messageRef, "reactions.$senderId", FieldValue.delete())
+                } else {
+                    transaction.update(messageRef, "reactions.$senderId", reaction.key)
+                }
+            }.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun toggleReactionOnGlobalMessage(messageId: String, reaction: Reaction): Result<Unit> {
+        val senderId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        val messageRef = firestore.collection("global_chat").document(messageId)
+
+        return try {
+            firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(messageRef)
+                val currentReactions = snapshot.get("reactions") as? Map<String, String> ?: emptyMap()
+
+                if (currentReactions[senderId] == reaction.key) {
+                    transaction.update(messageRef, "reactions.$senderId", FieldValue.delete())
+                } else {
+                    transaction.update(messageRef, "reactions.$senderId", reaction.key)
+                }
+            }.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
 

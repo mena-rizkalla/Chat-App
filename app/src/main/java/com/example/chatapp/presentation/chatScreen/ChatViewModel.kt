@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
+import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
+import com.example.chatapp.domain.model.Reaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -15,7 +17,8 @@ class ChatViewModel(
     private val receiverId: String,
     private val getChatMessagesUseCase: GetChatMessagesUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
-    private val getCurrentUserUseCase: GetCurrentUserUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val toggleReactionUseCase: TogglePrivateMessageReactionUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatState())
     val uiState = _uiState.asStateFlow()
@@ -39,6 +42,17 @@ class ChatViewModel(
                 sendMessageUseCase(receiverId, text)
                 _uiState.value = _uiState.value.copy(currentMessage = "") // Clear input
             }
+        }
+    }
+
+    fun toggleReaction(messageId: String, reaction: Reaction) {
+        viewModelScope.launch {
+            toggleReactionUseCase(
+                receiverId = receiverId,
+                messageId = messageId,
+                reaction = reaction
+            )
+            // No need to update state here, Firestore's snapshot listener will do it for us.
         }
     }
 }
