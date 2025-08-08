@@ -34,7 +34,7 @@ fun ForgotPasswordScreen(navController: NavController, viewModel: ForgotPassword
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Forgot Password") },
+                title = { Text("Reset Password") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -56,24 +56,21 @@ fun ForgotPasswordScreen(navController: NavController, viewModel: ForgotPassword
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
-
             Text(
-                text = "Reset Your Password",
+                text = "Forgot Your Password?",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Enter the email address associated with your account and we'll send you a link to reset your password.",
+                text = "No worries! Enter your email and we'll send you a link to reset it.",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Email Input Field
             OutlinedTextField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEmailChange(it) },
@@ -99,14 +96,13 @@ fun ForgotPasswordScreen(navController: NavController, viewModel: ForgotPassword
             if (uiState.successMessage != null) {
                 Text(
                     text = uiState.successMessage!!,
-                    color = Color(0xFF008000),
+                    color = Color(0xFF2E7D32), // A nice, theme-agnostic success green
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
 
-            // Send Reset Link Button
             Button(
                 onClick = {
                     viewModel.sendPasswordResetEmail({})
@@ -115,20 +111,15 @@ fun ForgotPasswordScreen(navController: NavController, viewModel: ForgotPassword
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = !uiState.isLoading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6A5AE0),
-                    contentColor = Color.White
-                )
+                enabled = !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Send Reset Link", fontSize = 16.sp)
+                    Text("Send Reset Link")
                 }
             }
         }

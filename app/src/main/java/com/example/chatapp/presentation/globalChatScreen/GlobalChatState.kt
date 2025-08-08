@@ -12,5 +12,6 @@ data class GlobalChatState(
 
 data class UiMessage(
     val message: Message,
-    val senderDisplayName: String
+    val senderDisplayName: String,
+    val shouldShowSenderName: Boolean = false
 )

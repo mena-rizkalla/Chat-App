@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -48,23 +49,20 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // Header Text
             Text(
-                text = "Welcome back,",
+                text = "Welcome Back!",
                 style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "We're happy to see you here again. Enter your email and password.",
+                text = "Log in to continue your conversations.",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-            // Email Input Field
             OutlinedTextField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEmailChange(it) },
@@ -77,7 +75,6 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password Input Field
             OutlinedTextField(
                 value = uiState.password,
                 onValueChange = { viewModel.onPasswordChange(it) },
@@ -89,25 +86,24 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    val image = if (passwordVisible) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder
+                    val image = if (passwordVisible) Icons.Filled.Lock else Icons.Filled.Done
                     val description = if (passwordVisible) "Hide password" else "Show password"
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(imageVector = image, contentDescription = description)
                     }
                 }
             )
-            Spacer(modifier = Modifier.height(8.dp))
 
-            // Forgot Password Link
-            TextButton(
-                onClick = { navController.navigate(Screen.ForgotPasswordScreen.route) },
-                modifier = Modifier.align(Alignment.End)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
             ) {
-                Text("Forgot password?")
+                TextButton(onClick = { navController.navigate(Screen.ForgotPasswordScreen.route) }) {
+                    Text("Forgot password?")
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Display Error Message
             if (uiState.error != null) {
                 Text(
                     text = uiState.error ?: "An unknown error occurred.",
@@ -117,11 +113,9 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
                 )
             }
 
-            // Login Button
             Button(
                 onClick = {
                     viewModel.signIn {
-                        // Navigate on success and clear the back stack
                         navController.navigate(Screen.UsersScreen.route) {
                             popUpTo(Screen.LoginScreen.route) { inclusive = true }
                         }
@@ -131,32 +125,26 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = !uiState.isLoading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6A5AE0), // Purple color from image
-                    contentColor = Color.White
-                )
+                enabled = !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Log In", fontSize = 16.sp)
+                    Text("Log In")
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Sign Up Link
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Don't have an account? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ClickableText(
                     text = AnnotatedString("Sign Up"),
                     onClick = { navController.navigate(Screen.SignUpScreen.route) },
                     style = TextStyle(
-                        color = Color(0xFF6A5AE0),
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -169,7 +157,6 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
 @Composable
 fun LoginScreenPreview() {
     ChatAppTheme {
-        // We use a dummy NavController for the preview
         LoginScreen(navController = rememberNavController())
     }
 }

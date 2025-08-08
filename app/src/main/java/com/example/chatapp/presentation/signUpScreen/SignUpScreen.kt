@@ -8,11 +8,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,7 +43,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,10 +63,10 @@ fun SignUpScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    if (uiState.isSignedUp) {
-        LaunchedEffect(key1 = Unit) {
+    // Navigate upon successful sign-up
+    LaunchedEffect(uiState.isSignedUp) {
+        if (uiState.isSignedUp) {
             navController.navigate(Screen.UsersScreen.route) {
-                // Clear the entire back stack up to the login screen
                 popUpTo(Screen.LoginScreen.route) { inclusive = true }
             }
         }
@@ -91,11 +102,13 @@ private fun SignUpScreenContent(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -105,19 +118,17 @@ private fun SignUpScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Create an account",
+                text = "Create Account",
                 style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Start)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
-                text = "Create your account, it takes less than a minute. Enter your Name, Email and password",
+                text = "Join our community in just a few steps.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                modifier = Modifier.align(Alignment.Start)
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -126,23 +137,26 @@ private fun SignUpScreenContent(
             OutlinedTextField(
                 value = uiState.displayName,
                 onValueChange = onDisplayNameChange,
-                label = { Text("Name") },
+                label = { Text("Display Name") },
                 modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Email Field (instead of Phone Number)
+            // Email Field
             OutlinedTextField(
                 value = uiState.email,
                 onValueChange = onEmailChange,
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 isError = uiState.error != null
             )
-
             Spacer(modifier = Modifier.height(16.dp))
 
             // Password Field
@@ -151,19 +165,29 @@ private fun SignUpScreenContent(
                 onValueChange = onPasswordChange,
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    val image = if (passwordVisible) Icons.Filled.Check else Icons.Filled.Clear
-                    val description = if (passwordVisible) "Hide password" else "Show password"
+                    val image = if (passwordVisible) Icons.Filled.Warning else Icons.Filled.Check
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = image, contentDescription = description)
+                        Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
                     }
                 },
                 isError = uiState.error != null
             )
-
             Spacer(modifier = Modifier.height(32.dp))
+
+            // Display error message
+            uiState.error?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
 
             // Sign Up Button
             Button(
@@ -171,30 +195,24 @@ private fun SignUpScreenContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                enabled = !uiState.isLoading
+                enabled = !uiState.isLoading,
+                shape = RoundedCornerShape(12.dp)
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 } else {
-                    Text("Create an account", fontSize = 16.sp)
+                    Text("Create Account")
                 }
             }
-
-            // Display error message if any
-            uiState.error?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = it, color = MaterialTheme.colorScheme.error)
-            }
-
             Spacer(modifier = Modifier.height(24.dp))
 
             // Log In Link
             Row {
-                Text("Already have an account? ", color = Color.Gray)
+                Text("Already have an account? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ClickableText(
                     text = AnnotatedString("Log In"),
                     onClick = { onLoginClick() },
-                    style = androidx.compose.ui.text.TextStyle(
+                    style = TextStyle(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
