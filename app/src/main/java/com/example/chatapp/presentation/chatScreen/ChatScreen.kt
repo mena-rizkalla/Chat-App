@@ -48,6 +48,7 @@ import androidx.navigation.NavController
 import com.example.chatapp.presentation.components.ChatInput
 import com.example.chatapp.presentation.components.MessageBubble
 import com.example.chatapp.presentation.components.ReactionPalette
+import com.example.chatapp.presentation.components.TypingIndicator
 import com.example.chatapp.presentation.globalChatScreen.UiMessage
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -129,6 +130,12 @@ fun ChatScreen(
                             isFromCurrentUser = message.senderId == uiState.currentUserId,
                             onLongPress = { msgId -> selectedMessageId = msgId }
                         )
+                    }
+
+                    item {
+                        AnimatedVisibility(visible = uiState.isOtherUserTyping) {
+                            TypingIndicator()
+                        }
                     }
                 }
             }
