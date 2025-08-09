@@ -152,6 +152,43 @@ class ChatRepositoryImpl(
         }
     }
 
+    override fun updateTypingStatus(receiverId: String, isTyping: Boolean) {
+        val senderId = auth.currentUser?.uid ?: return
+        val chatRoomId = getChatRoomId(senderId, receiverId)
+        val status = mapOf(
+            "isTyping" to isTyping,
+            "timestamp" to System.currentTimeMillis()
+        )
+        firestore.collection("chats").document(chatRoomId)
+            .collection("typing_status").document(senderId)
+            .set(status)
+    }
+
+    override fun getTypingStatus(receiverId: String): Flow<Boolean> = callbackFlow {
+        val senderId = auth.currentUser?.uid ?: return@callbackFlow
+        val chatRoomId = getChatRoomId(senderId, receiverId)
+
+        // Listen to the OTHER user's typing status document
+        val subscription = firestore.collection("chats").document(chatRoomId)
+            .collection("typing_status").document(receiverId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null || !snapshot.exists()) {
+                    trySend(false)
+                    return@addSnapshotListener
+                }
+
+                val isTyping = snapshot.getBoolean("isTyping") ?: false
+                val timestamp = snapshot.getLong("timestamp") ?: 0
+
+                // Consider not typing if the status is old (e.g., > 5 seconds)
+                val isStale = (System.currentTimeMillis() - timestamp) > 5000
+
+                trySend(isTyping && !isStale)
+            }
+
+        awaitClose { subscription.remove() }
+    }
+
 
     // Helper to create a consistent chat room ID for any two users.
     private fun getChatRoomId(user1: String, user2: String): String {

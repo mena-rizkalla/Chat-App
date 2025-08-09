@@ -16,4 +16,8 @@ interface ChatRepository {
     suspend fun toggleReactionOnPrivateMessage(receiverId: String, messageId: String, reaction: Reaction): Result<Unit>
     suspend fun toggleReactionOnGlobalMessage(messageId: String, reaction: Reaction): Result<Unit>
 
+    // New functions for typing indicator
+    fun updateTypingStatus(receiverId: String, isTyping: Boolean)
+    fun getTypingStatus(receiverId: String): Flow<Boolean>
+
 }
