@@ -8,10 +8,12 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -48,6 +50,8 @@ import androidx.navigation.NavController
 import com.example.chatapp.presentation.components.ChatInput
 import com.example.chatapp.presentation.components.MessageBubble
 import com.example.chatapp.presentation.components.ReactionPalette
+import com.example.chatapp.presentation.components.SuggestionButton
+import com.example.chatapp.presentation.components.SuggestionChips
 import com.example.chatapp.presentation.components.TypingIndicator
 import com.example.chatapp.presentation.globalChatScreen.UiMessage
 import org.koin.androidx.compose.koinViewModel
@@ -65,7 +69,6 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
 
-    // Auto-scroll to the latest message
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
@@ -78,17 +81,10 @@ fun ChatScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = receiverName.firstOrNull()?.toString() ?: "U",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Text(text = receiverName.firstOrNull()?.toString() ?: "U", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
                         Spacer(Modifier.width(12.dp))
                         Text(receiverName, style = MaterialTheme.typography.titleLarge)
@@ -103,17 +99,21 @@ fun ChatScreen(
             )
         },
         bottomBar = {
-            ChatInput(
-                message = uiState.currentMessage,
-                onMessageChange = viewModel::onMessageChange,
-                onSendClick = viewModel::sendMessage
-            )
+            Column {
+                SuggestionChips(
+                    suggestions = uiState.suggestedReplies,
+                    onSuggestionClick = viewModel::useSuggestion
+                )
+                ChatInput(
+                    message = uiState.currentMessage,
+                    onMessageChange = viewModel::onMessageChange,
+                    onSendClick = viewModel::sendMessage
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -133,6 +133,20 @@ fun ChatScreen(
                     }
 
                     item {
+                        // Show Suggest Reply button under the last received message
+                        val lastMessage = uiState.messages.lastOrNull()
+                        if (lastMessage != null && lastMessage.senderId != uiState.currentUserId && uiState.suggestedReplies.isEmpty()) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                                SuggestionButton(
+                                    onClick = viewModel::generateReplySuggestions,
+                                    isLoading = uiState.isGeneratingSuggestions,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    item {
                         AnimatedVisibility(visible = uiState.isOtherUserTyping) {
                             TypingIndicator()
                         }
@@ -140,20 +154,16 @@ fun ChatScreen(
                 }
             }
 
-            // Animated Reaction Palette
             AnimatedVisibility(
                 visible = selectedMessageId != null,
                 enter = fadeIn() + slideInVertically { it / 2 },
                 exit = slideOutVertically { it / 2 } + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.Center)
+                modifier = Modifier.align(Alignment.Center)
             ) {
                 ReactionPalette(
                     onReactionSelected = { reaction ->
-                        selectedMessageId?.let {
-                            viewModel.toggleReaction(it, reaction)
-                        }
-                        selectedMessageId = null // Hide palette after selection
+                        selectedMessageId?.let { viewModel.toggleReaction(it, reaction) }
+                        selectedMessageId = null
                     }
                 )
             }

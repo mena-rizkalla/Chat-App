@@ -7,8 +7,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -43,6 +46,8 @@ import com.example.chatapp.domain.model.Message
 import com.example.chatapp.presentation.components.ChatInput
 import com.example.chatapp.presentation.components.MessageBubble
 import com.example.chatapp.presentation.components.ReactionPalette
+import com.example.chatapp.presentation.components.SuggestionButton
+import com.example.chatapp.presentation.components.SuggestionChips
 import com.example.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -56,7 +61,6 @@ fun GlobalChatScreen(
     val listState = rememberLazyListState()
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
 
-    // Auto-scroll to the latest message
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
@@ -76,17 +80,21 @@ fun GlobalChatScreen(
             )
         },
         bottomBar = {
-            ChatInput(
-                message = uiState.currentMessage,
-                onMessageChange = viewModel::onMessageChange,
-                onSendClick = viewModel::sendMessage
-            )
+            Column {
+                SuggestionChips(
+                    suggestions = uiState.suggestedReplies,
+                    onSuggestionClick = viewModel::useSuggestion
+                )
+                ChatInput(
+                    message = uiState.currentMessage,
+                    onMessageChange = viewModel::onMessageChange,
+                    onSendClick = viewModel::sendMessage
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -97,7 +105,6 @@ fun GlobalChatScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(uiState.messages, key = { it.message.messageId }) { uiMessage ->
-                        // The 'shouldShowSenderName' flag tells the bubble to display the name
                         MessageBubble(
                             modifier = Modifier.animateItem(),
                             uiMessage = uiMessage.copy(shouldShowSenderName = true),
@@ -105,10 +112,22 @@ fun GlobalChatScreen(
                             onLongPress = { msgId -> selectedMessageId = msgId }
                         )
                     }
+
+                    item {
+                        val lastMessage = uiState.messages.lastOrNull()
+                        if (lastMessage != null && lastMessage.message.senderId != uiState.currentUserId && uiState.suggestedReplies.isEmpty()) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                                SuggestionButton(
+                                    onClick = viewModel::generateReplySuggestions,
+                                    isLoading = uiState.isGeneratingSuggestions,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            // Animated Reaction Palette
             AnimatedVisibility(
                 visible = selectedMessageId != null,
                 enter = fadeIn() + slideInVertically { it / 2 },
@@ -117,9 +136,7 @@ fun GlobalChatScreen(
             ) {
                 ReactionPalette(
                     onReactionSelected = { reaction ->
-                        selectedMessageId?.let {
-                            viewModel.toggleReaction(it, reaction)
-                        }
+                        selectedMessageId?.let { viewModel.toggleReaction(it, reaction) }
                         selectedMessageId = null
                     }
                 )
@@ -127,7 +144,6 @@ fun GlobalChatScreen(
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable

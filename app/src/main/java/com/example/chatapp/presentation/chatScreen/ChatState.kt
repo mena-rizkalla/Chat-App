@@ -8,5 +8,7 @@ data class ChatState(
     val currentUserId: String = "",
     val isOtherUserTyping: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val suggestedReplies: List<String> = emptyList(),
+    val isGeneratingSuggestions: Boolean = false,
 )

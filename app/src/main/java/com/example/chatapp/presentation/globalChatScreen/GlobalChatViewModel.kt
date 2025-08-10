@@ -8,6 +8,7 @@ import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
+import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import com.example.chatapp.domain.model.Reaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +23,7 @@ class GlobalChatViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val getUsersUseCase: GetUsersUseCase,
     private val toggleReactionUseCase: ToggleGlobalMessageReactionUseCase,
+    private val getGeminiResponseUseCase: GetGeminiResponseUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(GlobalChatState())
     val uiState = _uiState.asStateFlow()
@@ -88,5 +90,30 @@ class GlobalChatViewModel(
         viewModelScope.launch {
             toggleReactionUseCase(messageId = messageId, reaction = reaction)
         }
+    }
+
+    fun generateReplySuggestions() {
+        val lastMessage = uiState.value.messages.lastOrNull { it.message.senderId != uiState.value.currentUserId }
+        if (lastMessage == null || uiState.value.isGeneratingSuggestions) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isGeneratingSuggestions = true, suggestedReplies = emptyList())
+            val prompt = "Based on the message from ${lastMessage.senderDisplayName}: \"${lastMessage.message.text}\", suggest three short, distinct, and natural-sounding replies. Format them as a simple numbered list without any extra text."
+            getGeminiResponseUseCase(prompt).onSuccess { response ->
+                val replies = response.lines().mapNotNull {
+                    it.replaceFirst(Regex("^\\d+\\.?\\s*"), "").trim()
+                }.filter { it.isNotBlank() }
+                _uiState.value = _uiState.value.copy(suggestedReplies = replies, isGeneratingSuggestions = false)
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(isGeneratingSuggestions = false)
+            }
+        }
+    }
+
+    fun useSuggestion(suggestion: String) {
+        _uiState.value = _uiState.value.copy(
+            currentMessage = suggestion,
+            suggestedReplies = emptyList()
+        )
     }
 }
