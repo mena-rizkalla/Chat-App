@@ -20,4 +20,6 @@ interface ChatRepository {
     fun updateTypingStatus(receiverId: String, isTyping: Boolean)
     fun getTypingStatus(receiverId: String): Flow<Boolean>
 
+    suspend fun markMessagesAsRead(receiverId: String, messageId: String): Result<Unit>
+
 }
