@@ -11,12 +11,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -85,13 +91,27 @@ fun MessageBubble(
                 // Message text
                 Text(text = uiMessage.message.text, color = textColor)
                 Spacer(Modifier.height(4.dp))
-                // Timestamp inside the bubble
-                Text(
-                    text = formatTimestamp(uiMessage.message.timestamp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = textColor.copy(alpha = 0.7f),
+                // Timestamp and receipt indicator
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.align(Alignment.End)
-                )
+                ) {
+                    Text(
+                        text = formatTimestamp(uiMessage.message.timestamp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = (if (isFromCurrentUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer).copy(alpha = 0.7f)
+                    )
+                    // Only show receipt for messages sent by the current user
+                    if (isFromCurrentUser) {
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = if (uiMessage.message.isRead) Icons.Default.CheckCircle else Icons.Default.Check,
+                            contentDescription = "Message Status",
+                            tint = if (uiMessage.message.isRead) Color.Blue else Color.Gray,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
         }
 

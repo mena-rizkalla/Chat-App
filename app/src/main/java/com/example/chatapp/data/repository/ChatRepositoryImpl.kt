@@ -189,6 +189,22 @@ class ChatRepositoryImpl(
         awaitClose { subscription.remove() }
     }
 
+    override suspend fun markMessagesAsRead(
+        receiverId: String,
+        messageId: String
+    ): Result<Unit> {
+        val currentUserId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        val chatRoomId = getChatRoomId(currentUserId, receiverId)
+        val messageRef = firestore.collection("chats").document(chatRoomId).collection("messages").document(messageId)
+
+        return try {
+            messageRef.update("isRead", true).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 
     // Helper to create a consistent chat room ID for any two users.
     private fun getChatRoomId(user1: String, user2: String): String {

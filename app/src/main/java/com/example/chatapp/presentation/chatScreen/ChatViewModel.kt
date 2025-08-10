@@ -8,6 +8,7 @@ import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
 import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateTypingStatusUseCase
+import com.example.chatapp.domain.chatUseCases.MarkMessageAsReadUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import com.example.chatapp.domain.model.Reaction
 import kotlinx.coroutines.FlowPreview
@@ -28,6 +29,7 @@ class ChatViewModel(
     private val getTypingStatusUseCase: GetTypingStatusUseCase,
     private val updateTypingStatusUseCase: UpdateTypingStatusUseCase,
     private val getGeminiResponseUseCase: GetGeminiResponseUseCase,
+    private val markMessagesAsReadUseCase: MarkMessageAsReadUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatState())
     val uiState = _uiState.asStateFlow()
@@ -39,6 +41,10 @@ class ChatViewModel(
         getChatMessagesUseCase(receiverId)
             .onEach { messages ->
                 _uiState.value = _uiState.value.copy(messages = messages)
+                // When new messages arrive, mark any unread ones from the other user as read.
+                messages.filter { it.senderId == receiverId && !it.isRead }.forEach {
+                    markMessageAsRead(it.messageId)
+                }
             }.launchIn(viewModelScope)
 
         getTypingStatusUseCase(receiverId)
@@ -113,5 +119,10 @@ class ChatViewModel(
             currentMessage = suggestion,
             suggestedReplies = emptyList() // Clear suggestions after one is used
         )
+    }
+    private fun markMessageAsRead(messageId: String) {
+        viewModelScope.launch {
+            markMessagesAsReadUseCase(receiverId = receiverId, messageId = messageId)
+        }
     }
 }

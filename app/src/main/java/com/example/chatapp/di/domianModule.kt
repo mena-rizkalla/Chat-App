@@ -9,6 +9,7 @@ import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
+import com.example.chatapp.domain.chatUseCases.MarkMessageAsReadUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
 import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
@@ -42,5 +43,7 @@ val domainModule = module {
     // Typing status
     factory { UpdateTypingStatusUseCase(get()) }
     factory { GetTypingStatusUseCase(get()) }
+
+    factory { MarkMessageAsReadUseCase(get()) }
 
 }
