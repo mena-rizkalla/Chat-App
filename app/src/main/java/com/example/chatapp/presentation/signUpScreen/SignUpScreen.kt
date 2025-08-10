@@ -66,7 +66,7 @@ fun SignUpScreen(
     // Navigate upon successful sign-up
     LaunchedEffect(uiState.isSignedUp) {
         if (uiState.isSignedUp) {
-            navController.navigate(Screen.UsersScreen.route) {
+            navController.navigate(Screen.MainScreen.route) {
                 popUpTo(Screen.LoginScreen.route) { inclusive = true }
             }
         }

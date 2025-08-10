@@ -59,12 +59,6 @@ fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinVi
     val uiState by viewModel.uiState.collectAsState()
     UsersScreenContent(
         state = uiState,
-        onGoToGlobalChatClick = {
-            navController.navigate(Screen.GlobalChatScreen.route)
-        },
-        onGoToAiChatClick = {
-            navController.navigate(Screen.AiChatScreen.route)
-        },
         onChatClick = { receiverName, receiverId ->
             navController.navigate(
                 Screen.ChatScreen.createRoute(
@@ -81,21 +75,11 @@ fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinVi
 private fun UsersScreenContent(
     state: UsersState,
     onChatClick: (receiverName: String, receiverId: String) -> Unit,
-    onGoToGlobalChatClick: () -> Unit,
-    onGoToAiChatClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Chats", style = MaterialTheme.typography.headlineMedium) },
-                actions = {
-                    IconButton(onClick = onGoToAiChatClick) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Chat with Gemini")
-                    }
-                    IconButton(onClick = onGoToGlobalChatClick) {
-                        Icon(Icons.Default.Person, contentDescription = "Global Chat")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface
@@ -179,8 +163,6 @@ fun UsersScreenPreview() {
         UsersScreenContent(
             state = UsersState(),
             onChatClick = { _, _ -> },
-            onGoToAiChatClick = {},
-            onGoToGlobalChatClick = {}
         )
     }
 }
