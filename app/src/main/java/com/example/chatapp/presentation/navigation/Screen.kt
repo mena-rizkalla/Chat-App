@@ -11,4 +11,6 @@ sealed class Screen(val route: String) {
     object GlobalChatScreen : Screen("global_chat_screen")
 
     object AiChatScreen : Screen("ai_chat_screen")
+    object ProfileScreen : Screen("profile_screen")
+    object MainScreen : Screen("main_route")
 }

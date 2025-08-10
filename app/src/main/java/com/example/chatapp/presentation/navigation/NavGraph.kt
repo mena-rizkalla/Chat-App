@@ -10,6 +10,7 @@ import com.example.chatapp.presentation.chatScreen.ChatScreen
 import com.example.chatapp.presentation.forgetPasswordScreen.ForgotPasswordScreen
 import com.example.chatapp.presentation.globalChatScreen.GlobalChatScreen
 import com.example.chatapp.presentation.loginScreen.LoginScreen
+import com.example.chatapp.presentation.main.MainScreen
 import com.example.chatapp.presentation.signUpScreen.SignUpScreen
 import com.example.chatapp.presentation.usersScreen.UsersScreen
 import org.koin.compose.koinInject
@@ -21,12 +22,17 @@ fun NavGraph(
     val navController = rememberNavController()
     // Determine the start destination based on whether the user is already logged in.
     val startDestination = if (getCurrentUserUseCase() != null) {
-        Screen.UsersScreen.route
+        "main_route"
     } else {
         Screen.LoginScreen.route
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
+
+        composable("main_route") {
+            MainScreen(mainNavController = navController)
+        }
+
         composable(Screen.LoginScreen.route) {
             LoginScreen(navController = navController)
         }

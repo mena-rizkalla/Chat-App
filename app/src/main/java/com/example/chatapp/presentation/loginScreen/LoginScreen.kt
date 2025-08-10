@@ -116,7 +116,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
             Button(
                 onClick = {
                     viewModel.signIn {
-                        navController.navigate(Screen.UsersScreen.route) {
+                        navController.navigate(Screen.MainScreen.route) {
                             popUpTo(Screen.LoginScreen.route) { inclusive = true }
                         }
                     }

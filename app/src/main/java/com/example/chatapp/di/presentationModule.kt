@@ -5,6 +5,7 @@ import com.example.chatapp.presentation.chatScreen.ChatViewModel
 import com.example.chatapp.presentation.forgetPasswordScreen.ForgotPasswordViewModel
 import com.example.chatapp.presentation.globalChatScreen.GlobalChatViewModel
 import com.example.chatapp.presentation.loginScreen.LoginViewModel
+import com.example.chatapp.presentation.profileScreen.ProfileViewModel
 import com.example.chatapp.presentation.signUpScreen.SignUpViewModel
 import com.example.chatapp.presentation.usersScreen.UsersViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -20,4 +21,6 @@ val presentationModule = module {
     viewModel { GlobalChatViewModel(get(), get(), get(), get(), get(), get()) }
 
     viewModel { AiChatViewModel(get()) }
+    viewModel { ProfileViewModel(get(), get()) }
+
 }
