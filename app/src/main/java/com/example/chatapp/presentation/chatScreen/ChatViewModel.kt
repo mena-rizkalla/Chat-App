@@ -8,6 +8,7 @@ import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
 import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateTypingStatusUseCase
+import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import com.example.chatapp.domain.model.Reaction
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,8 @@ class ChatViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val toggleReactionUseCase: TogglePrivateMessageReactionUseCase,
     private val getTypingStatusUseCase: GetTypingStatusUseCase,
-    private val updateTypingStatusUseCase: UpdateTypingStatusUseCase
+    private val updateTypingStatusUseCase: UpdateTypingStatusUseCase,
+    private val getGeminiResponseUseCase: GetGeminiResponseUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatState())
     val uiState = _uiState.asStateFlow()
@@ -85,5 +87,31 @@ class ChatViewModel(
             )
             // No need to update state here, Firestore's snapshot listener will do it for us.
         }
+    }
+
+    fun generateReplySuggestions() {
+        val lastMessage = uiState.value.messages.lastOrNull { it.senderId != uiState.value.currentUserId }
+        if (lastMessage == null || uiState.value.isGeneratingSuggestions) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isGeneratingSuggestions = true, suggestedReplies = emptyList())
+
+            val prompt = "Based on the message: \"${lastMessage.text}\", suggest three short, distinct, and natural-sounding replies. Format them as a simple numbered list without any extra text."
+            getGeminiResponseUseCase(prompt).onSuccess { response ->
+                val replies = response.lines().mapNotNull {
+                    it.replaceFirst(Regex("^\\d+\\.?\\s*"), "").trim()
+                }.filter { it.isNotBlank() }
+                _uiState.value = _uiState.value.copy(suggestedReplies = replies, isGeneratingSuggestions = false)
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(isGeneratingSuggestions = false)
+            }
+        }
+    }
+
+    fun useSuggestion(suggestion: String) {
+        _uiState.value = _uiState.value.copy(
+            currentMessage = suggestion,
+            suggestedReplies = emptyList() // Clear suggestions after one is used
+        )
     }
 }
