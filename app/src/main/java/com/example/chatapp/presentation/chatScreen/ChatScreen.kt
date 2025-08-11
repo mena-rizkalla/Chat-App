@@ -133,6 +133,7 @@ fun ChatScreen(
                             modifier = Modifier.animateItem(),
                             uiMessage =uiMessage,
                             isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
+                            receiverLastSeenTimestamp = uiState.receiverLastSeenTimestamp,
                             onLongPress = { msgId -> selectedMessageId = msgId },
                             onStartReply = { uiMsg -> viewModel.onStartReply(uiMsg)}
                         )

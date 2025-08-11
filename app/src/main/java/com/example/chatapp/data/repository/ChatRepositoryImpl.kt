@@ -1,5 +1,6 @@
 package com.example.chatapp.data.repository
 
+import android.system.Os.close
 import com.example.chatapp.domain.ChatRepository
 import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.Reaction
@@ -206,20 +207,41 @@ class ChatRepositoryImpl(
         awaitClose { subscription.remove() }
     }
 
-    override suspend fun markMessagesAsRead(
-        receiverId: String,
-        messageId: String
-    ): Result<Unit> {
-        val currentUserId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
-        val chatRoomId = getChatRoomId(currentUserId, receiverId)
-        val messageRef = firestore.collection("chats").document(chatRoomId).collection("messages").document(messageId)
-
+    override suspend fun updateLastSeenTimestamp(receiverId: String): Result<Unit> {
         return try {
-            messageRef.update("isRead", true).await()
+            val currentUserId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+            val chatRoomId = getChatRoomId(currentUserId, receiverId)
+
+            val docRef = firestore.collection("chats").document(chatRoomId)
+                .collection("read_status").document(currentUserId)
+
+            // use FieldValue.serverTimestamp() for a reliable, server-generated timestamp
+            docRef.set(mapOf("lastSeen" to FieldValue.serverTimestamp())).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override fun getLastSeenTimestamp(receiverId: String): Flow<Long>  = callbackFlow {
+        val currentUserId = auth.currentUser?.uid ?:  return@callbackFlow
+        val chatRoomId = getChatRoomId(currentUserId, receiverId)
+
+        // listen to the OTHER user's (the receiver's) document
+        val docRef = firestore.collection("chats").document(chatRoomId)
+            .collection("read_status").document(receiverId)
+
+        val subscription = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error) // Close the flow on error
+                return@addSnapshotListener
+            }
+            // Convert the Firestore Timestamp to a simple Long (milliseconds)
+            val timestamp = snapshot?.getTimestamp("lastSeen")?.toDate()?.time ?: 0L
+            trySend(timestamp)
+        }
+
+        awaitClose { subscription.remove() }
     }
 
 

@@ -17,7 +17,7 @@ val presentationModule = module {
     viewModel { ForgotPasswordViewModel(get()) }
     viewModel { UsersViewModel(get(), get(), get()) }
     // We pass parameters to ChatViewModel from the navigation graph
-    viewModel { params -> ChatViewModel(receiverId = params.get(), receiverName = params.get(),get(), get(), get(), get(), get(), get(), get(),get()) }
+    viewModel { params -> ChatViewModel(receiverId = params.get(), receiverName = params.get(),get(), get(), get(), get(), get(), get(), get(),get(), get()) }
     viewModel { GlobalChatViewModel(get(), get(), get(), get(), get(), get()) }
 
     viewModel { AiChatViewModel(get()) }

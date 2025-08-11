@@ -7,13 +7,14 @@ import com.example.chatapp.domain.authUseCases.SignOutUseCase
 import com.example.chatapp.domain.authUseCases.SignUpUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
+import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
-import com.example.chatapp.domain.chatUseCases.MarkMessageAsReadUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
 import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
 import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
+import com.example.chatapp.domain.chatUseCases.UpdateLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateTypingStatusUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import org.koin.dsl.module
@@ -44,6 +45,8 @@ val domainModule = module {
     factory { UpdateTypingStatusUseCase(get()) }
     factory { GetTypingStatusUseCase(get()) }
 
-    factory { MarkMessageAsReadUseCase(get()) }
+    factory { UpdateLastSeenUseCase(get()) }
+    factory { GetLastSeenUseCase(get()) }
+
 
 }

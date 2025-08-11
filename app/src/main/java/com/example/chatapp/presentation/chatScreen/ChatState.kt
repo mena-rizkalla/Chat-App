@@ -1,6 +1,6 @@
 package com.example.chatapp.presentation.chatScreen
 
-import com.example.chatapp.domain.model.Message
+
 import com.example.chatapp.presentation.globalChatScreen.UiMessage
 
 data class ChatState(
@@ -12,5 +12,6 @@ data class ChatState(
     val error: String? = null,
     val suggestedReplies: List<String> = emptyList(),
     val isGeneratingSuggestions: Boolean = false,
-    val replyingToMessage: UiMessage? = null
+    val replyingToMessage: UiMessage? = null,
+    val receiverLastSeenTimestamp: Long = 0L,
 )

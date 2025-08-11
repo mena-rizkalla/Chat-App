@@ -93,13 +93,14 @@ fun AiChatScreen(
             }) { message ->
                 val isFromCurrentUser = message.senderId == AiChatViewModel.USER_ID
                 MessageBubble(
-                    modifier = Modifier.animateItem(),
                     uiMessage = UiMessage(
                         message,
                         senderDisplayName = if (isFromCurrentUser) "You" else "Gemini"
                     ),
                     isFromCurrentUser = isFromCurrentUser,
-                    onLongPress = { /* No reactions in AI chat for now */ }
+                    receiverLastSeenTimestamp = 0L,
+                    onLongPress = { /* No reactions in AI chat for now */ },
+                    modifier = Modifier.animateItem(),
                 )
             }
         }

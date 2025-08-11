@@ -19,10 +19,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.Reaction
 import com.example.chatapp.presentation.globalChatScreen.UiMessage
 import me.saket.swipe.SwipeAction
@@ -49,16 +47,20 @@ import java.util.Locale
 fun MessageBubble(
     uiMessage: UiMessage,
     isFromCurrentUser: Boolean,
+    receiverLastSeenTimestamp: Long,
     onLongPress: (String) -> Unit,
     onStartReply: ((UiMessage) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    // This is the single source of truth for the read status
+    val isRead = isFromCurrentUser && uiMessage.message.timestamp <= receiverLastSeenTimestamp
+
     val replyAction = if (onStartReply != null) {
         SwipeAction(
             onSwipe = { onStartReply(uiMessage) },
             icon = {
                 Icon(
-                    Icons.Default.PlayArrow,
+                    Icons.Default.Reply,
                     contentDescription = "Reply",
                     modifier = Modifier.padding(16.dp),
                     tint = MaterialTheme.colorScheme.onPrimary
@@ -66,7 +68,7 @@ fun MessageBubble(
             },
             background = MaterialTheme.colorScheme.primary
         )
-    }else {
+    } else {
         null
     }
 
@@ -74,9 +76,8 @@ fun MessageBubble(
         modifier = modifier,
         startActions = if (!isFromCurrentUser && replyAction != null) listOf(replyAction) else emptyList(),
         endActions = if (isFromCurrentUser && replyAction != null) listOf(replyAction) else emptyList(),
-        swipeThreshold = 80.dp // The distance you need to swipe
+        swipeThreshold = 80.dp
     ) {
-
         val bubbleShape = if (isFromCurrentUser) {
             RoundedCornerShape(topStart = 20.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
         } else {
@@ -88,7 +89,7 @@ fun MessageBubble(
         val alignment = if (isFromCurrentUser) Alignment.End else Alignment.Start
 
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 4.dp),
             horizontalAlignment = alignment
@@ -100,15 +101,13 @@ fun MessageBubble(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .padding(start = if (isFromCurrentUser) 0.dp else 12.dp, bottom = 4.dp)
+                    modifier = Modifier.padding(start = 12.dp, bottom = 4.dp)
                 )
             }
 
-            // Main message container
             Box(
                 modifier = Modifier
-                    .widthIn(max = 300.dp) // Constrain bubble width
+                    .widthIn(max = 300.dp)
                     .clip(bubbleShape)
                     .background(backgroundColor)
                     .combinedClickable(
@@ -118,16 +117,17 @@ fun MessageBubble(
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
 
+                    // Display the replied-to message if it exists
                     if (uiMessage.message.repliedToMessageText != null) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 8.dp, bottomEnd = 8.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
                                 .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
                             Column {
                                 Text(
-                                    text = "Replying to ${uiMessage.repliedToSenderName}", // Again, you'd look up the name
+                                    text = "Replying to ${uiMessage.repliedToSenderName ?: "..."}",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -142,9 +142,10 @@ fun MessageBubble(
                         Spacer(Modifier.height(8.dp))
                     }
 
-                    // Message text
+                    // Main message text
                     Text(text = uiMessage.message.text, color = textColor)
                     Spacer(Modifier.height(4.dp))
+
                     // Timestamp and receipt indicator
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -153,17 +154,15 @@ fun MessageBubble(
                         Text(
                             text = formatTimestamp(uiMessage.message.timestamp),
                             style = MaterialTheme.typography.labelMedium,
-                            color = (if (isFromCurrentUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer).copy(
-                                alpha = 0.7f
-                            )
+                            color = textColor.copy(alpha = 0.7f)
                         )
                         // Only show receipt for messages sent by the current user
                         if (isFromCurrentUser) {
                             Spacer(Modifier.width(4.dp))
                             Icon(
-                                imageVector = if (uiMessage.message.isRead) Icons.Default.CheckCircle else Icons.Default.Check,
+                                imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
                                 contentDescription = "Message Status",
-                                tint = if (uiMessage.message.isRead) Color.Blue else Color.Gray,
+                                tint = if (isRead) Color.Blue else Color.Gray,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -182,6 +181,7 @@ fun MessageBubble(
         }
     }
 }
+
 
 @Composable
 fun ReactionPalette(
