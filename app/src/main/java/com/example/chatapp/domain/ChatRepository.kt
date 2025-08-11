@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
     suspend fun getUsers(): Result<List<User>>
-    suspend fun sendMessage(receiverId: String, text: String): Result<Unit>
+    suspend fun sendMessage(receiverId: String, text: String,repliedToMessageId: String?, repliedToMessageText: String?, repliedToSenderId: String?): Result<Unit>
     fun getChatMessages(receiverId: String): Flow<List<Message>>
-    suspend fun sendGlobalMessage(text: String): Result<Unit>
+    suspend fun sendGlobalMessage(text: String, repliedToMessageId: String?, repliedToMessageText: String?, repliedToSenderId: String?): Result<Unit>
     fun getGlobalChatMessages(): Flow<List<Message>>
 
     // New functions for handling reactions

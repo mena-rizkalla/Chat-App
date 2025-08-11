@@ -91,4 +91,6 @@ dependencies {
 
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
+    implementation("me.saket.swipe:swipe:1.1.1")
+
 }
