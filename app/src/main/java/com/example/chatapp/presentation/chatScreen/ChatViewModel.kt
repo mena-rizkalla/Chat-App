@@ -11,7 +11,9 @@ import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCa
 import com.example.chatapp.domain.chatUseCases.UpdateLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateTypingStatusUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
+import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.Reaction
+import com.example.chatapp.presentation.globalChatScreen.UiMessage
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 @OptIn(FlowPreview::class)
 class ChatViewModel(
     private val receiverId: String,
+    private val receiverName: String,
     private val getChatMessagesUseCase: GetChatMessagesUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
@@ -40,9 +43,17 @@ class ChatViewModel(
     val uiState = _uiState.asStateFlow()
 
     private val textInputFlow = MutableStateFlow("")
+    private val userNames = mutableMapOf<String, String>()
+
     init {
-        // Set the current user's ID in the state
-        _uiState.update { it.copy(currentUserId = getCurrentUserUseCase()?.uid ?: "") }
+        val currentUser = getCurrentUserUseCase()
+        if (currentUser != null) {
+            _uiState.value = _uiState.value.copy(currentUserId = currentUser.uid)
+            // Create the map to look up names from IDs
+            userNames[currentUser.uid] = "You"
+            userNames[receiverId] = receiverName
+        }
+
 
         // 1. Immediately update our own "last seen" timestamp in Firestore.
         // This signals to the other user that we are currently in the chat.
@@ -60,28 +71,43 @@ class ChatViewModel(
 
         // Fetch all chat messages and update the UI
         getChatMessagesUseCase(receiverId)
-            .onEach { messagesFromDb ->
-                _uiState.update { it.copy(messages = messagesFromDb) }
+            .onEach { messages -> // This is a List<Message> from the database
+                // Map to UiMessage for the UI
+                val uiMessages = messages.map { msg ->
+                    UiMessage(
+                        message = msg,
+                        senderDisplayName = userNames[msg.senderId] ?: "Unknown",
+                        repliedToSenderName = userNames[msg.repliedToSenderId]
+                    )
+                }
+                // Update the UI state with the mapped messages
+                _uiState.update { it.copy(messages = uiMessages) }
+
+                // After updating the UI, check if the last message
+                // is from the other user.
+                if (messages.lastOrNull()?.senderId == receiverId) {
+                    // If it is, it means we just "saw" a new message.
+                    // Immediately update our own "last seen" timestamp to signal this.
+                    updateLastSeenUseCase(receiverId)
+                }
             }.launchIn(viewModelScope)
 
-        // Listen for the other user's typing status
+
         getTypingStatusUseCase(receiverId)
             .onEach { isTyping ->
-                _uiState.update { it.copy(isOtherUserTyping = isTyping) }
+                _uiState.value = _uiState.value.copy(isOtherUserTyping = isTyping)
             }.launchIn(viewModelScope)
 
-        // Set up the logic for sending our own typing status
         viewModelScope.launch {
             textInputFlow
                 .onEach { text ->
-                    // Signal that we are typing as soon as there's text
                     if (text.isNotBlank()) {
                         updateTypingStatusUseCase(receiverId, true)
                     }
                 }
-                // Wait for a 2-second pause in typing before sending "not typing"
-                .debounce(2000)
+                .debounce(2000) // After 2s of no new text...
                 .collect {
+                    // ...update status to not typing.
                     updateTypingStatusUseCase(receiverId, false)
                 }
         }
@@ -95,9 +121,19 @@ class ChatViewModel(
     fun sendMessage() {
         viewModelScope.launch {
             val text = uiState.value.currentMessage
+            val replyingTo = uiState.value.replyingToMessage
             if (text.isNotBlank()) {
-                sendMessageUseCase(receiverId, text)
-                _uiState.value = _uiState.value.copy(currentMessage = "") // Clear input
+                sendMessageUseCase(
+                    receiverId,
+                    text,
+                    repliedToMessageId = replyingTo?.message?.messageId,
+                    repliedToMessageText = replyingTo?.message?.text,
+                    repliedToSenderId = replyingTo?.message?.senderId
+                )
+                _uiState.value = _uiState.value.copy(
+                    currentMessage = "", // Clear input
+                    replyingToMessage = null
+                )
                 textInputFlow.value = ""
                 updateTypingStatusUseCase(receiverId, false)
             }
@@ -116,13 +152,13 @@ class ChatViewModel(
     }
 
     fun generateReplySuggestions() {
-        val lastMessage = uiState.value.messages.lastOrNull { it.senderId != uiState.value.currentUserId }
+        val lastMessage = uiState.value.messages.lastOrNull { it.message.senderId != uiState.value.currentUserId }
         if (lastMessage == null || uiState.value.isGeneratingSuggestions) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isGeneratingSuggestions = true, suggestedReplies = emptyList())
 
-            val prompt = "Based on the message: \"${lastMessage.text}\", suggest three short, distinct, and natural-sounding replies. Format them as a simple numbered list without any extra text."
+            val prompt = "Based on the message: \"${lastMessage.message.text}\", suggest three short, distinct, and natural-sounding replies. Format them as a simple numbered list without any extra text."
             getGeminiResponseUseCase(prompt).onSuccess { response ->
                 val replies = response.lines().mapNotNull {
                     it.replaceFirst(Regex("^\\d+\\.?\\s*"), "").trim()
@@ -139,5 +175,13 @@ class ChatViewModel(
             currentMessage = suggestion,
             suggestedReplies = emptyList() // Clear suggestions after one is used
         )
+    }
+
+    fun onStartReply(uiMessage: UiMessage) {
+        _uiState.value = _uiState.value.copy(replyingToMessage = uiMessage)
+    }
+
+    fun onCancelReply() {
+        _uiState.value = _uiState.value.copy(replyingToMessage = null)
     }
 }
