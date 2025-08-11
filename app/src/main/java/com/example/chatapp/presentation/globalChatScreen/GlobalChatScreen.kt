@@ -46,6 +46,7 @@ import com.example.chatapp.domain.model.Message
 import com.example.chatapp.presentation.components.ChatInput
 import com.example.chatapp.presentation.components.MessageBubble
 import com.example.chatapp.presentation.components.ReactionPalette
+import com.example.chatapp.presentation.components.ReplyPreview
 import com.example.chatapp.presentation.components.SuggestionButton
 import com.example.chatapp.presentation.components.SuggestionChips
 import com.example.chatapp.ui.theme.ChatAppTheme
@@ -85,6 +86,10 @@ fun GlobalChatScreen(
                     suggestions = uiState.suggestedReplies,
                     onSuggestionClick = viewModel::useSuggestion
                 )
+                ReplyPreview(
+                    uiMessage = uiState.replyingToMessage,
+                    onCancelReply = viewModel::onCancelReply
+                )
                 ChatInput(
                     message = uiState.currentMessage,
                     onMessageChange = viewModel::onMessageChange,
@@ -106,11 +111,12 @@ fun GlobalChatScreen(
                 ) {
                     items(uiState.messages, key = { it.message.messageId }) { uiMessage ->
                         MessageBubble(
+                            modifier = Modifier.animateItem(),
                             uiMessage = uiMessage.copy(shouldShowSenderName = true),
                             isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
                             receiverLastSeenTimestamp = 0L,
                             onLongPress = { msgId -> selectedMessageId = msgId },
-                            modifier = Modifier.animateItem(),
+                            onStartReply = { msg -> viewModel.onStartReply(msg)}
                         )
                     }
 
@@ -184,7 +190,8 @@ fun GlobalChatScreenPreview() {
                         isFromCurrentUser = uiMessage.message.senderId == "2",
                         receiverLastSeenTimestamp = 0L,
                         onLongPress = {},
-                        modifier = Modifier.navigationBarsPadding(),,
+                        modifier = Modifier.navigationBarsPadding() ,
+                        onStartReply = {},
                     )
                 }
             }

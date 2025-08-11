@@ -50,6 +50,7 @@ import androidx.navigation.NavController
 import com.example.chatapp.presentation.components.ChatInput
 import com.example.chatapp.presentation.components.MessageBubble
 import com.example.chatapp.presentation.components.ReactionPalette
+import com.example.chatapp.presentation.components.ReplyPreview
 import com.example.chatapp.presentation.components.SuggestionButton
 import com.example.chatapp.presentation.components.SuggestionChips
 import com.example.chatapp.presentation.components.TypingIndicator
@@ -63,7 +64,7 @@ fun ChatScreen(
     navController: NavController,
     receiverId: String,
     receiverName: String,
-    viewModel: ChatViewModel = koinViewModel(parameters = { parametersOf(receiverId) })
+    viewModel: ChatViewModel = koinViewModel(parameters = { parametersOf(receiverId,receiverName) })
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -104,6 +105,10 @@ fun ChatScreen(
                     suggestions = uiState.suggestedReplies,
                     onSuggestionClick = viewModel::useSuggestion
                 )
+                ReplyPreview(
+                    uiMessage = uiState.replyingToMessage,
+                    onCancelReply = viewModel::onCancelReply
+                )
                 ChatInput(
                     message = uiState.currentMessage,
                     onMessageChange = viewModel::onMessageChange,
@@ -123,20 +128,21 @@ fun ChatScreen(
                     contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    items(uiState.messages, key = { it.messageId }) { message ->
+                    items(uiState.messages, key = { it.message.messageId }) { uiMessage ->
                         MessageBubble(
-                            uiMessage = UiMessage(message, receiverName),
-                            isFromCurrentUser = message.senderId == uiState.currentUserId,
+                            modifier = Modifier.animateItem(),
+                            uiMessage =uiMessage,
+                            isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
                             receiverLastSeenTimestamp = uiState.receiverLastSeenTimestamp,
                             onLongPress = { msgId -> selectedMessageId = msgId },
-                            modifier = Modifier.animateItem(),
+                            onStartReply = { uiMsg -> viewModel.onStartReply(uiMsg)}
                         )
                     }
 
                     item {
                         // Show Suggest Reply button under the last received message
                         val lastMessage = uiState.messages.lastOrNull()
-                        if (lastMessage != null && lastMessage.senderId != uiState.currentUserId && uiState.suggestedReplies.isEmpty()) {
+                        if (lastMessage != null && lastMessage.message.senderId != uiState.currentUserId && uiState.suggestedReplies.isEmpty()) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                                 SuggestionButton(
                                     onClick = viewModel::generateReplySuggestions,

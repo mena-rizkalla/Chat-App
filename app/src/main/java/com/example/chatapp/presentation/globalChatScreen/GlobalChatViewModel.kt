@@ -9,6 +9,7 @@ import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
+import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.Reaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,25 +36,41 @@ class GlobalChatViewModel(
     private fun loadData() {
         viewModelScope.launch {
             // 1. Set loading state and get current user ID
-            val currentUserId = getCurrentUserUseCase()?.uid ?: ""
-            _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                currentUserId = currentUserId
-            )
+            val currentUser = getCurrentUserUseCase()
+            val currentUserId = currentUser?.uid ?: ""
+            _uiState.value = _uiState.value.copy(isLoading = true, currentUserId = currentUserId)
+
+
             Log.d("GlobalChatViewModel", "Current User ID set to: $currentUserId")
 
 
             // 2. Fetch the list of users first.
             getUsersUseCase().onSuccess { users ->
-                val userMap = users.associateBy({ it.uid }, { it.displayName })
+                val userMap = users.associateBy({ it.uid }, { it.displayName }).toMutableMap()
                 Log.d("GlobalChatViewModel", "User Map Loaded: $userMap")
-
+                if (currentUser != null) {
+                    userMap[currentUser.uid] = currentUser.displayName
+                }
                 // 3. If users are fetched successfully, start listening for messages.
                 getGlobalMessagesUseCase().onEach { messages ->
                     val uiMessages = messages.map { message ->
+
+                        val senderName = if (message.senderId == currentUserId) {
+                            "You"
+                        } else {
+                            userMap[message.senderId] ?: "Unknown User"
+                        }
+
+                        val repliedToName = if (message.repliedToSenderId == currentUserId) {
+                            "You"
+                        } else {
+                            userMap[message.repliedToSenderId]
+                        }
+
                         UiMessage(
                             message = message,
-                            senderDisplayName = userMap[message.senderId] ?: "Unknown User"
+                            senderDisplayName = senderName,
+                            repliedToSenderName = repliedToName
                         )
                     }
                     _uiState.value = _uiState.value.copy(
@@ -79,9 +96,15 @@ class GlobalChatViewModel(
     fun sendMessage() {
         viewModelScope.launch {
             val text = uiState.value.currentMessage
+            val replyingTo = uiState.value.replyingToMessage
             if (text.isNotBlank()) {
-                sendGlobalMessageUseCase(text)
-                _uiState.value = _uiState.value.copy(currentMessage = "") // Clear input
+                sendGlobalMessageUseCase(
+                    text,
+                    repliedToMessageId = replyingTo?.message?.messageId,
+                    repliedToMessageText = replyingTo?.message?.text,
+                    repliedToSenderId = replyingTo?.message?.senderId
+                )
+                _uiState.value = _uiState.value.copy(currentMessage = "",replyingToMessage = null) // Clear input
             }
         }
     }
@@ -115,5 +138,13 @@ class GlobalChatViewModel(
             currentMessage = suggestion,
             suggestedReplies = emptyList()
         )
+    }
+
+    fun onStartReply(uiMessage: UiMessage) {
+         _uiState.value = _uiState.value.copy(replyingToMessage = uiMessage)
+    }
+
+    fun onCancelReply() {
+         _uiState.value = _uiState.value.copy(replyingToMessage = null)
     }
 }
