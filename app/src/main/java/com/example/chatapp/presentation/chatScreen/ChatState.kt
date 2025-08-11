@@ -11,4 +11,5 @@ data class ChatState(
     val error: String? = null,
     val suggestedReplies: List<String> = emptyList(),
     val isGeneratingSuggestions: Boolean = false,
+    val receiverLastSeenTimestamp: Long = 0L,
 )

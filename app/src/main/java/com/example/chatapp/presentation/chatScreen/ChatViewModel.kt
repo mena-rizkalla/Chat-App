@@ -4,19 +4,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
+import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
 import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
+import com.example.chatapp.domain.chatUseCases.UpdateLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateTypingStatusUseCase
-import com.example.chatapp.domain.chatUseCases.MarkMessageAsReadUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import com.example.chatapp.domain.model.Reaction
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
@@ -29,39 +33,55 @@ class ChatViewModel(
     private val getTypingStatusUseCase: GetTypingStatusUseCase,
     private val updateTypingStatusUseCase: UpdateTypingStatusUseCase,
     private val getGeminiResponseUseCase: GetGeminiResponseUseCase,
-    private val markMessagesAsReadUseCase: MarkMessageAsReadUseCase,
+    private val updateLastSeenUseCase: UpdateLastSeenUseCase,
+    private val getLastSeenUseCase: GetLastSeenUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatState())
     val uiState = _uiState.asStateFlow()
 
     private val textInputFlow = MutableStateFlow("")
-
     init {
-        _uiState.value = _uiState.value.copy(currentUserId = getCurrentUserUseCase()?.uid ?: "")
-        getChatMessagesUseCase(receiverId)
-            .onEach { messages ->
-                _uiState.value = _uiState.value.copy(messages = messages)
-                // When new messages arrive, mark any unread ones from the other user as read.
-                messages.filter { it.senderId == receiverId && !it.isRead }.forEach {
-                    markMessageAsRead(it.messageId)
-                }
+        // Set the current user's ID in the state
+        _uiState.update { it.copy(currentUserId = getCurrentUserUseCase()?.uid ?: "") }
+
+        // 1. Immediately update our own "last seen" timestamp in Firestore.
+        // This signals to the other user that we are currently in the chat.
+        viewModelScope.launch {
+            updateLastSeenUseCase(receiverId)
+        }
+
+        // 2. Listen for the OTHER user's "last seen" timestamp in real-time.
+        // The UI will use this to determine if our messages have been read.
+        getLastSeenUseCase(receiverId)
+            .onEach { lastSeenTimestamp ->
+                _uiState.update { it.copy(receiverLastSeenTimestamp = lastSeenTimestamp) }
             }.launchIn(viewModelScope)
 
+
+        // Fetch all chat messages and update the UI
+        getChatMessagesUseCase(receiverId)
+            .onEach { messagesFromDb ->
+                _uiState.update { it.copy(messages = messagesFromDb) }
+            }.launchIn(viewModelScope)
+
+        // Listen for the other user's typing status
         getTypingStatusUseCase(receiverId)
             .onEach { isTyping ->
-                _uiState.value = _uiState.value.copy(isOtherUserTyping = isTyping)
+                _uiState.update { it.copy(isOtherUserTyping = isTyping) }
             }.launchIn(viewModelScope)
 
+        // Set up the logic for sending our own typing status
         viewModelScope.launch {
             textInputFlow
                 .onEach { text ->
+                    // Signal that we are typing as soon as there's text
                     if (text.isNotBlank()) {
                         updateTypingStatusUseCase(receiverId, true)
                     }
                 }
-                .debounce(2000) // After 2s of no new text...
+                // Wait for a 2-second pause in typing before sending "not typing"
+                .debounce(2000)
                 .collect {
-                    // ...update status to not typing.
                     updateTypingStatusUseCase(receiverId, false)
                 }
         }
@@ -119,10 +139,5 @@ class ChatViewModel(
             currentMessage = suggestion,
             suggestedReplies = emptyList() // Clear suggestions after one is used
         )
-    }
-    private fun markMessageAsRead(messageId: String) {
-        viewModelScope.launch {
-            markMessagesAsReadUseCase(receiverId = receiverId, messageId = messageId)
-        }
     }
 }

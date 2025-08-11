@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,9 +46,12 @@ import java.util.Locale
 fun MessageBubble(
     uiMessage: UiMessage,
     isFromCurrentUser: Boolean,
+    receiverLastSeenTimestamp: Long,
     onLongPress: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    val isRead = isFromCurrentUser && uiMessage.message.timestamp <= receiverLastSeenTimestamp
+
     val bubbleShape = if (isFromCurrentUser) {
         RoundedCornerShape(topStart = 20.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
     } else {
@@ -105,9 +109,10 @@ fun MessageBubble(
                     if (isFromCurrentUser) {
                         Spacer(Modifier.width(4.dp))
                         Icon(
-                            imageVector = if (uiMessage.message.isRead) Icons.Default.CheckCircle else Icons.Default.Check,
+                            // ✅ Use our new calculated 'isRead' boolean here
+                            imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
                             contentDescription = "Message Status",
-                            tint = if (uiMessage.message.isRead) Color.Blue else Color.Gray,
+                            tint = if (isRead) Color.Blue else Color.Gray,
                             modifier = Modifier.size(16.dp)
                         )
                     }

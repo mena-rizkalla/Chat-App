@@ -106,10 +106,11 @@ fun GlobalChatScreen(
                 ) {
                     items(uiState.messages, key = { it.message.messageId }) { uiMessage ->
                         MessageBubble(
-                            modifier = Modifier.animateItem(),
                             uiMessage = uiMessage.copy(shouldShowSenderName = true),
                             isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
-                            onLongPress = { msgId -> selectedMessageId = msgId }
+                            receiverLastSeenTimestamp = 0L,
+                            onLongPress = { msgId -> selectedMessageId = msgId },
+                            modifier = Modifier.animateItem(),
                         )
                     }
 
@@ -181,8 +182,9 @@ fun GlobalChatScreenPreview() {
                     MessageBubble(
                         uiMessage = uiMessage,
                         isFromCurrentUser = uiMessage.message.senderId == "2",
+                        receiverLastSeenTimestamp = 0L,
                         onLongPress = {},
-                        modifier = Modifier.navigationBarsPadding() ,
+                        modifier = Modifier.navigationBarsPadding(),,
                     )
                 }
             }

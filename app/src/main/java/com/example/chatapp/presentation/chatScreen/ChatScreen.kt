@@ -125,10 +125,11 @@ fun ChatScreen(
                 ) {
                     items(uiState.messages, key = { it.messageId }) { message ->
                         MessageBubble(
-                            modifier = Modifier.animateItem(),
                             uiMessage = UiMessage(message, receiverName),
                             isFromCurrentUser = message.senderId == uiState.currentUserId,
-                            onLongPress = { msgId -> selectedMessageId = msgId }
+                            receiverLastSeenTimestamp = uiState.receiverLastSeenTimestamp,
+                            onLongPress = { msgId -> selectedMessageId = msgId },
+                            modifier = Modifier.animateItem(),
                         )
                     }
 

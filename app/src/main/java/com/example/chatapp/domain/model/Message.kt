@@ -7,7 +7,6 @@ data class Message(
     val text: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val reactions: Map<String, String> = emptyMap(),
-    val isRead: Boolean = false,
 )
 
 enum class Reaction(val key: String, val emoji: String) {
