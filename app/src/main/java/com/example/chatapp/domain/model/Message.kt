@@ -8,6 +8,9 @@ data class Message(
     val timestamp: Long = System.currentTimeMillis(),
     val reactions: Map<String, String> = emptyMap(),
     val isRead: Boolean = false,
+    val repliedToMessageId: String? = null,
+    val repliedToMessageText: String? = null,
+    val repliedToSenderId: String? = null
 )
 
 enum class Reaction(val key: String, val emoji: String) {

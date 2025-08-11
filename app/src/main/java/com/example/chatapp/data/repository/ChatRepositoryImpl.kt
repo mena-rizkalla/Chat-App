@@ -29,7 +29,13 @@ class ChatRepositoryImpl(
         }
     }
 
-    override suspend fun sendMessage(receiverId: String, text: String): Result<Unit> {
+    override suspend fun sendMessage(
+        receiverId: String,
+        text: String,
+        repliedToMessageId: String?,
+        repliedToMessageText: String?,
+        repliedToSenderId: String?
+    ): Result<Unit> {
         return try {
             val senderId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
             val messageId = firestore.collection("chats").document().id
@@ -40,7 +46,10 @@ class ChatRepositoryImpl(
                 senderId = senderId,
                 receiverId = receiverId,
                 text = text,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                repliedToMessageId = repliedToMessageId,
+                repliedToMessageText = repliedToMessageText,
+                repliedToSenderId = repliedToSenderId
             )
             firestore.collection("chats").document(chatRoomId).collection("messages").document(messageId).set(message).await()
             Result.success(Unit)
@@ -69,7 +78,12 @@ class ChatRepositoryImpl(
         awaitClose { subscription.remove() }
     }
 
-    override suspend fun sendGlobalMessage(text: String): Result<Unit> {
+    override suspend fun sendGlobalMessage(
+        text: String,
+        repliedToMessageId: String?,
+        repliedToMessageText: String?,
+        repliedToSenderId: String?
+    ): Result<Unit> {
         return try {
             val senderId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
             val messageId = firestore.collection("global_chat").document().id
@@ -79,7 +93,10 @@ class ChatRepositoryImpl(
                 senderId = senderId,
                 receiverId = null, // No receiver for global messages
                 text = text,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                repliedToMessageId = repliedToMessageId,
+                repliedToMessageText = repliedToMessageText,
+                repliedToSenderId = repliedToSenderId
             )
             firestore.collection("global_chat").document(messageId).set(message).await()
             Result.success(Unit)

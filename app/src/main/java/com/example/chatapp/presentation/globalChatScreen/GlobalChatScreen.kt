@@ -46,6 +46,7 @@ import com.example.chatapp.domain.model.Message
 import com.example.chatapp.presentation.components.ChatInput
 import com.example.chatapp.presentation.components.MessageBubble
 import com.example.chatapp.presentation.components.ReactionPalette
+import com.example.chatapp.presentation.components.ReplyPreview
 import com.example.chatapp.presentation.components.SuggestionButton
 import com.example.chatapp.presentation.components.SuggestionChips
 import com.example.chatapp.ui.theme.ChatAppTheme
@@ -85,6 +86,10 @@ fun GlobalChatScreen(
                     suggestions = uiState.suggestedReplies,
                     onSuggestionClick = viewModel::useSuggestion
                 )
+                ReplyPreview(
+                    uiMessage = uiState.replyingToMessage,
+                    onCancelReply = viewModel::onCancelReply
+                )
                 ChatInput(
                     message = uiState.currentMessage,
                     onMessageChange = viewModel::onMessageChange,
@@ -109,7 +114,8 @@ fun GlobalChatScreen(
                             modifier = Modifier.animateItem(),
                             uiMessage = uiMessage.copy(shouldShowSenderName = true),
                             isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
-                            onLongPress = { msgId -> selectedMessageId = msgId }
+                            onLongPress = { msgId -> selectedMessageId = msgId },
+                            onStartReply = { msg -> viewModel.onStartReply(msg)}
                         )
                     }
 
@@ -183,6 +189,7 @@ fun GlobalChatScreenPreview() {
                         isFromCurrentUser = uiMessage.message.senderId == "2",
                         onLongPress = {},
                         modifier = Modifier.navigationBarsPadding() ,
+                        onStartReply = {}
                     )
                 }
             }

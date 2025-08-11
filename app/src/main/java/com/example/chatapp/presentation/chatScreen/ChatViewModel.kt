@@ -10,7 +10,9 @@ import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCa
 import com.example.chatapp.domain.chatUseCases.UpdateTypingStatusUseCase
 import com.example.chatapp.domain.chatUseCases.MarkMessageAsReadUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
+import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.Reaction
+import com.example.chatapp.presentation.globalChatScreen.UiMessage
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 @OptIn(FlowPreview::class)
 class ChatViewModel(
     private val receiverId: String,
+    private val receiverName: String,
     private val getChatMessagesUseCase: GetChatMessagesUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
@@ -35,12 +38,27 @@ class ChatViewModel(
     val uiState = _uiState.asStateFlow()
 
     private val textInputFlow = MutableStateFlow("")
+    private val userNames = mutableMapOf<String, String>()
 
     init {
-        _uiState.value = _uiState.value.copy(currentUserId = getCurrentUserUseCase()?.uid ?: "")
+        val currentUser = getCurrentUserUseCase()
+        if (currentUser != null) {
+            _uiState.value = _uiState.value.copy(currentUserId = currentUser.uid)
+            // Create the map to look up names from IDs
+            userNames[currentUser.uid] = "You"
+            userNames[receiverId] = receiverName
+        }
+
         getChatMessagesUseCase(receiverId)
             .onEach { messages ->
-                _uiState.value = _uiState.value.copy(messages = messages)
+                val uiMessages = messages.map { msg ->
+                    UiMessage(
+                        message = msg,
+                        senderDisplayName = userNames[msg.senderId] ?: "Unknown",
+                        repliedToSenderName = userNames[msg.repliedToSenderId]
+                    )
+                }
+                _uiState.value = _uiState.value.copy(messages = uiMessages)
                 // When new messages arrive, mark any unread ones from the other user as read.
                 messages.filter { it.senderId == receiverId && !it.isRead }.forEach {
                     markMessageAsRead(it.messageId)
@@ -75,9 +93,19 @@ class ChatViewModel(
     fun sendMessage() {
         viewModelScope.launch {
             val text = uiState.value.currentMessage
+            val replyingTo = uiState.value.replyingToMessage
             if (text.isNotBlank()) {
-                sendMessageUseCase(receiverId, text)
-                _uiState.value = _uiState.value.copy(currentMessage = "") // Clear input
+                sendMessageUseCase(
+                    receiverId,
+                    text,
+                    repliedToMessageId = replyingTo?.message?.messageId,
+                    repliedToMessageText = replyingTo?.message?.text,
+                    repliedToSenderId = replyingTo?.message?.senderId
+                )
+                _uiState.value = _uiState.value.copy(
+                    currentMessage = "", // Clear input
+                    replyingToMessage = null
+                )
                 textInputFlow.value = ""
                 updateTypingStatusUseCase(receiverId, false)
             }
@@ -96,13 +124,13 @@ class ChatViewModel(
     }
 
     fun generateReplySuggestions() {
-        val lastMessage = uiState.value.messages.lastOrNull { it.senderId != uiState.value.currentUserId }
+        val lastMessage = uiState.value.messages.lastOrNull { it.message.senderId != uiState.value.currentUserId }
         if (lastMessage == null || uiState.value.isGeneratingSuggestions) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isGeneratingSuggestions = true, suggestedReplies = emptyList())
 
-            val prompt = "Based on the message: \"${lastMessage.text}\", suggest three short, distinct, and natural-sounding replies. Format them as a simple numbered list without any extra text."
+            val prompt = "Based on the message: \"${lastMessage.message.text}\", suggest three short, distinct, and natural-sounding replies. Format them as a simple numbered list without any extra text."
             getGeminiResponseUseCase(prompt).onSuccess { response ->
                 val replies = response.lines().mapNotNull {
                     it.replaceFirst(Regex("^\\d+\\.?\\s*"), "").trim()
@@ -124,5 +152,13 @@ class ChatViewModel(
         viewModelScope.launch {
             markMessagesAsReadUseCase(receiverId = receiverId, messageId = messageId)
         }
+    }
+
+    fun onStartReply(uiMessage: UiMessage) {
+        _uiState.value = _uiState.value.copy(replyingToMessage = uiMessage)
+    }
+
+    fun onCancelReply() {
+        _uiState.value = _uiState.value.copy(replyingToMessage = null)
     }
 }

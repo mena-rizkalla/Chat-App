@@ -10,10 +10,12 @@ data class GlobalChatState(
     val error: String? = null,
     val suggestedReplies: List<String> = emptyList(),
     val isGeneratingSuggestions: Boolean = false,
+    val replyingToMessage: UiMessage? = null
 )
 
 data class UiMessage(
     val message: Message,
     val senderDisplayName: String,
+    val repliedToSenderName: String? = null,
     val shouldShowSenderName: Boolean = false
 )
