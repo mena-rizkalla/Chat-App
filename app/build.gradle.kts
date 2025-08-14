@@ -44,6 +44,7 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("String", "GEMINI_API_KEY",  getApiKey(rootProject.rootDir))
         }
     }
     compileOptions {
