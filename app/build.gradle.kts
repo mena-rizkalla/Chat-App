@@ -83,7 +83,6 @@ dependencies {
     implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)
-    testImplementation(libs.junit.jupiter)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -95,7 +94,7 @@ dependencies {
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.navigation.compose)
     implementation("androidx.compose.material:material-icons-extended-android:1.6.7")
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation(libs.generativeai)
 
     implementation("me.saket.swipe:swipe:1.1.1")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.0.0")
