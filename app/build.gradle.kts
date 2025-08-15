@@ -28,11 +28,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-
-
         buildConfigField("String", "GEMINI_API_KEY",  getApiKey(rootProject.rootDir))
     }
 
@@ -58,6 +54,13 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
+    }
 }
 
 
@@ -79,6 +82,8 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.junit.jupiter)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -93,5 +98,8 @@ dependencies {
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
     implementation("me.saket.swipe:swipe:1.1.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.0.0")
+    testImplementation("org.mockito:mockito-inline:5.2.0")
+    testImplementation(kotlin("test"))
 
 }
