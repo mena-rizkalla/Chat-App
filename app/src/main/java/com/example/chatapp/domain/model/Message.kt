@@ -10,7 +10,8 @@ data class Message(
     val isRead: Boolean = false,
     val repliedToMessageId: String? = null,
     val repliedToMessageText: String? = null,
-    val repliedToSenderId: String? = null
+    val repliedToSenderId: String? = null,
+    val isEdited: Boolean = false,
 )
 
 enum class Reaction(val key: String, val emoji: String) {

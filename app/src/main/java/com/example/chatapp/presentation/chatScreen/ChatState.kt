@@ -14,4 +14,7 @@ data class ChatState(
     val isGeneratingSuggestions: Boolean = false,
     val replyingToMessage: UiMessage? = null,
     val receiverLastSeenTimestamp: Long = 0L,
+    val messageForAction: UiMessage? = null,
+    val editingMessage: UiMessage? = null,
+    val showDeleteConfirmDialog: Boolean = false
 )

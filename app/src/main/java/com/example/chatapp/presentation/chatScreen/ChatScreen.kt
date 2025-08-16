@@ -24,6 +24,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
@@ -48,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.chatapp.presentation.components.ChatInput
+import com.example.chatapp.presentation.components.MessageActionsBottomSheet
 import com.example.chatapp.presentation.components.MessageBubble
 import com.example.chatapp.presentation.components.ReactionPalette
 import com.example.chatapp.presentation.components.ReplyPreview
@@ -74,6 +79,47 @@ fun ChatScreen(
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
         }
+    }
+
+    if (uiState.messageForAction != null) {
+        MessageActionsBottomSheet(
+            uiMessage = uiState.messageForAction!!,
+            currentUserId = uiState.currentUserId,
+            onDismiss = viewModel::onDismissMessageActions,
+            onReply = {
+                viewModel.onStartReply(uiState.messageForAction!!)
+                viewModel.onDismissMessageActions()
+            },
+            onEdit = {
+                viewModel.onStartEdit()
+                viewModel.onDismissMessageActions()
+            },
+            onDelete = {
+                viewModel.onStartDelete()
+            },
+            onReact = { reaction ->
+                viewModel.toggleReaction(uiState.messageForAction!!.message.messageId, reaction)
+                viewModel.onDismissMessageActions()
+            }
+        )
+    }
+
+
+    if (uiState.showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::onCancelDelete,
+            title = { Text("Delete Message") },
+            text = { Text("Are you sure you want to permanently delete this message?") },
+            confirmButton = {
+                Button(
+                    onClick = viewModel::onConfirmDelete,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::onCancelDelete) { Text("Cancel") }
+            }
+        )
     }
 
     Scaffold(
@@ -112,7 +158,15 @@ fun ChatScreen(
                 ChatInput(
                     message = uiState.currentMessage,
                     onMessageChange = viewModel::onMessageChange,
-                    onSendClick = viewModel::sendMessage
+                    onSendClick = {
+                        if (uiState.editingMessage != null) {
+                            viewModel.onConfirmEdit()
+                        } else {
+                            viewModel.sendMessage()
+                        }
+                    },
+                    isEditing = uiState.editingMessage != null,
+                    onCancelEdit = viewModel::onCancelEdit
                 )
             }
         },
@@ -130,12 +184,11 @@ fun ChatScreen(
                 ) {
                     items(uiState.messages, key = { it.message.messageId }) { uiMessage ->
                         MessageBubble(
-                            modifier = Modifier.animateItem(),
                             uiMessage =uiMessage,
                             isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
                             receiverLastSeenTimestamp = uiState.receiverLastSeenTimestamp,
-                            onLongPress = { msgId -> selectedMessageId = msgId },
-                            onStartReply = { uiMsg -> viewModel.onStartReply(uiMsg)}
+                            onLongPress = { viewModel.onMessageActionSelected(uiMessage) },
+                            onStartReply = { viewModel.onStartReply(uiMessage)}
                         )
                     }
 
