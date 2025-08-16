@@ -5,6 +5,8 @@ import com.example.chatapp.domain.authUseCases.SendPasswordResetUseCase
 import com.example.chatapp.domain.authUseCases.SignInUseCase
 import com.example.chatapp.domain.authUseCases.SignOutUseCase
 import com.example.chatapp.domain.authUseCases.SignUpUseCase
+import com.example.chatapp.domain.chatUseCases.DeleteMessageUseCase
+import com.example.chatapp.domain.chatUseCases.EditMessageUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
@@ -47,6 +49,10 @@ val domainModule = module {
 
     factory { UpdateLastSeenUseCase(get()) }
     factory { GetLastSeenUseCase(get()) }
+
+    factory { EditMessageUseCase(get()) }
+    factory { DeleteMessageUseCase(get()) }
+
 
 
 }

@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,7 +36,9 @@ fun ChatInput(
     message: String,
     modifier: Modifier = Modifier,
     onMessageChange: (String) -> Unit,
-    onSendClick: () -> Unit
+    onSendClick: () -> Unit,
+    isEditing: Boolean = false,
+    onCancelEdit: () -> Unit = {}
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -48,6 +52,12 @@ fun ChatInput(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+            if (isEditing) {
+                IconButton(onClick = onCancelEdit) {
+                    Icon(Icons.Default.Close, contentDescription = "Cancel Edit")
+                }
+            }
 
             TextField(
                 value = message,
@@ -79,8 +89,9 @@ fun ChatInput(
                     contentColor = if (message.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             ) {
+                val icon = if (isEditing) Icons.Default.Check else Icons.Default.Send
                 Icon(
-                    Icons.AutoMirrored.Filled.Send,
+                    icon,
                     contentDescription = "Send Message",
                     modifier = Modifier.padding(start = 4.dp)
                 )

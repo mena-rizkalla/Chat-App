@@ -3,6 +3,8 @@ package com.example.chatapp.presentation.chatScreen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
+import com.example.chatapp.domain.chatUseCases.DeleteMessageUseCase
+import com.example.chatapp.domain.chatUseCases.EditMessageUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
@@ -38,6 +40,8 @@ class ChatViewModel(
     private val getGeminiResponseUseCase: GetGeminiResponseUseCase,
     private val updateLastSeenUseCase: UpdateLastSeenUseCase,
     private val getLastSeenUseCase: GetLastSeenUseCase,
+    private val editMessageUseCase: EditMessageUseCase,
+    private val deleteMessageUseCase: DeleteMessageUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatState())
     val uiState = _uiState.asStateFlow()
@@ -183,5 +187,57 @@ class ChatViewModel(
 
     fun onCancelReply() {
         _uiState.value = _uiState.value.copy(replyingToMessage = null)
+    }
+
+    fun onMessageActionSelected(uiMessage: UiMessage) {
+        _uiState.value = _uiState.value.copy(messageForAction = uiMessage)
+    }
+
+    fun onDismissMessageActions() {
+        _uiState.value = _uiState.value.copy(messageForAction = null)
+    }
+
+    fun onStartEdit() {
+        val messageToEdit = uiState.value.messageForAction
+        _uiState.value = _uiState.value.copy(
+            editingMessage = messageToEdit,
+            currentMessage = messageToEdit?.message?.text ?: "", // Pre-fill the input field
+            messageForAction = null
+        )
+    }
+
+    fun onCancelEdit() {
+        _uiState.value = _uiState.value.copy(editingMessage = null, currentMessage = "")
+    }
+
+    fun onConfirmEdit() {
+        viewModelScope.launch {
+            val messageToEdit = uiState.value.editingMessage
+            val newText = uiState.value.currentMessage
+            if (messageToEdit != null && newText.isNotBlank()) {
+                editMessageUseCase(receiverId, messageToEdit.message.messageId, newText)
+                onCancelEdit() // Clear the editing state
+            }
+        }
+    }
+
+    fun onStartDelete() {
+        _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = true)
+    }
+
+    fun onCancelDelete() {
+        _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = false, messageForAction = null)
+    }
+
+    fun onConfirmDelete() {
+        viewModelScope.launch {
+            val messageToDelete = uiState.value.messageForAction
+            if (messageToDelete != null) {
+                deleteMessageUseCase(receiverId, messageToDelete.message.messageId)
+                _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = false, messageForAction = null)
+            }
+            _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = false,messageForAction = null)
+
+        }
     }
 }
