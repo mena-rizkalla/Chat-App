@@ -23,4 +23,7 @@ interface ChatRepository {
     suspend fun updateLastSeenTimestamp(receiverId: String): Result<Unit>
     fun getLastSeenTimestamp(receiverId: String): Flow<Long>
 
+    suspend fun editMessage(receiverId: String, messageId: String, newText: String): Result<Unit>
+    suspend fun deleteMessage(receiverId: String, messageId: String): Result<Unit>
+
 }
