@@ -3,6 +3,7 @@ package com.example.chatapp.data.repository
 import com.example.chatapp.domain.AuthRepository
 import com.example.chatapp.domain.model.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -29,6 +30,10 @@ class AuthRepositoryImpl(
             val firebaseUser = authResult.user
             if (firebaseUser != null) {
                 // Create a user document in Firestore
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(displayName)
+                    .build()
+                firebaseUser.updateProfile(profileUpdates).await()
                 val user = User(uid = firebaseUser.uid, email = email, displayName = displayName)
                 firestore.collection("users").document(firebaseUser.uid).set(user).await()
                 Result.success(Unit)
