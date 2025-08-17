@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
     suspend fun getUsers(): Result<List<User>>
+
+    fun getOnlineUsers(): Flow<List<User>>
     suspend fun sendMessage(receiverId: String, text: String,repliedToMessageId: String?, repliedToMessageText: String?, repliedToSenderId: String?): Result<Unit>
     fun getChatMessages(receiverId: String): Flow<List<Message>>
     suspend fun sendGlobalMessage(text: String, repliedToMessageId: String?, repliedToMessageText: String?, repliedToSenderId: String?): Result<Unit>
@@ -23,7 +25,11 @@ interface ChatRepository {
     suspend fun updateLastSeenTimestamp(receiverId: String): Result<Unit>
     fun getLastSeenTimestamp(receiverId: String): Flow<Long>
 
+    suspend fun updateUserPresence(): Result<Unit>
+
     suspend fun editMessage(receiverId: String, messageId: String, newText: String): Result<Unit>
     suspend fun deleteMessage(receiverId: String, messageId: String): Result<Unit>
+
+    fun getUserProfileStream(uid: String): Flow<User?>
 
 }

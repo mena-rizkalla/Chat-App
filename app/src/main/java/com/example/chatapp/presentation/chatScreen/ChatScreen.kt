@@ -60,8 +60,10 @@ import com.example.chatapp.presentation.components.SuggestionButton
 import com.example.chatapp.presentation.components.SuggestionChips
 import com.example.chatapp.presentation.components.TypingIndicator
 import com.example.chatapp.presentation.globalChatScreen.UiMessage
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +76,14 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
+    var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(15000L) // Update every 15 seconds
+            currentTime = System.currentTimeMillis()
+        }
+    }
 
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
@@ -134,7 +144,17 @@ fun ChatScreen(
                             Text(text = receiverName.firstOrNull()?.toString() ?: "U", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
                         Spacer(Modifier.width(12.dp))
-                        Text(receiverName, style = MaterialTheme.typography.titleLarge)
+                        Column {
+                            Text(receiverName, style = MaterialTheme.typography.titleMedium)
+                            // --- Active Status Logic ---
+                            val lastSeen = uiState.receiverLastSeenTimestamp
+                            val statusText = formatLastSeen(lastSeen, currentTime)
+                            Text(
+                                text = statusText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (statusText == "Active now") Color(0xFF00C853) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -228,5 +248,21 @@ fun ChatScreen(
                 )
             }
         }
+    }
+}
+
+private fun formatLastSeen(timestamp: Long, currentTime: Long): String {
+    if (timestamp == 0L) return ""
+    val diff = currentTime - timestamp
+
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+    val hours = TimeUnit.MILLISECONDS.toHours(diff)
+    val days = TimeUnit.MILLISECONDS.toDays(diff)
+
+    return when {
+        minutes < 1 -> "Active now"
+        minutes < 60 -> "Active $minutes minutes ago"
+        hours < 24 -> "Active $hours hours ago"
+        else -> "Active $days days ago"
     }
 }

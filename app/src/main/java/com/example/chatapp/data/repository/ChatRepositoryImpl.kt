@@ -244,6 +244,35 @@ class ChatRepositoryImpl(
         awaitClose { subscription.remove() }
     }
 
+    override fun getOnlineUsers(): Flow<List<User>> = callbackFlow {
+        val currentUserId = auth.currentUser?.uid
+        val usersCollection = firestore.collection("users")
+
+        val listener = usersCollection.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            if (snapshot != null) {
+                val users = snapshot.toObjects(User::class.java).filter { it.uid != currentUserId }
+                trySend(users)
+            }
+        }
+        awaitClose { listener.remove() }
+    }
+
+    override suspend fun updateUserPresence(): Result<Unit> {
+        val currentUserId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        return try {
+            firestore.collection("users").document(currentUserId)
+                .update("lastSeenTimestamp", System.currentTimeMillis())
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun editMessage(
         receiverId: String,
         messageId: String,
@@ -278,6 +307,19 @@ class ChatRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override fun getUserProfileStream(uid: String): Flow<User?> = callbackFlow {
+        val docRef = firestore.collection("users").document(uid)
+        val listener = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            trySend(snapshot?.toObject(User::class.java))
+        }
+        awaitClose { listener.remove() }
+    }
+
 
 
     // Helper to create a consistent chat room ID for any two users.

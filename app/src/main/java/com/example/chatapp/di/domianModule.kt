@@ -10,7 +10,9 @@ import com.example.chatapp.domain.chatUseCases.EditMessageUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
+import com.example.chatapp.domain.chatUseCases.GetOnlineUsersUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
+import com.example.chatapp.domain.chatUseCases.GetUserProfileStreamUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
@@ -18,6 +20,7 @@ import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCas
 import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateTypingStatusUseCase
+import com.example.chatapp.domain.chatUseCases.UpdateUserPresenceUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import org.koin.dsl.module
 
@@ -50,9 +53,12 @@ val domainModule = module {
     factory { UpdateLastSeenUseCase(get()) }
     factory { GetLastSeenUseCase(get()) }
 
+    factory { GetOnlineUsersUseCase(get()) }
+    factory { UpdateUserPresenceUseCase(get()) }
+
     factory { EditMessageUseCase(get()) }
     factory { DeleteMessageUseCase(get()) }
 
-
+    factory { GetUserProfileStreamUseCase(get()) }
 
 }

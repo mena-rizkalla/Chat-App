@@ -8,6 +8,7 @@ import com.example.chatapp.domain.chatUseCases.EditMessageUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
+import com.example.chatapp.domain.chatUseCases.GetUserProfileStreamUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
 import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
 import com.example.chatapp.domain.chatUseCases.UpdateLastSeenUseCase
@@ -41,7 +42,8 @@ class ChatViewModel(
     private val updateLastSeenUseCase: UpdateLastSeenUseCase,
     private val getLastSeenUseCase: GetLastSeenUseCase,
     private val editMessageUseCase: EditMessageUseCase,
-    private val deleteMessageUseCase: DeleteMessageUseCase
+    private val deleteMessageUseCase: DeleteMessageUseCase,
+    private val getUserProfileStreamUseCase: GetUserProfileStreamUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatState())
     val uiState = _uiState.asStateFlow()
@@ -58,6 +60,12 @@ class ChatViewModel(
             userNames[receiverId] = receiverName
         }
 
+        getUserProfileStreamUseCase(receiverId)
+            .onEach { user ->
+                if (user != null) {
+                    _uiState.update { it.copy(receiverLastSeenTimestamp = user.lastSeenTimestamp) }
+                }
+            }.launchIn(viewModelScope)
 
         // 1. Immediately update our own "last seen" timestamp in Firestore.
         // This signals to the other user that we are currently in the chat.
