@@ -25,4 +25,6 @@ val appModule = module {
 
     single<GeminiRepository> { GeminiRepositoryImpl() }
 
+    single {PresenceManager(get())}
+
 }

@@ -2,6 +2,7 @@ package com.example.chatapp.presentation.usersScreen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,8 +34,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +58,7 @@ import com.example.chatapp.R
 import com.example.chatapp.domain.model.User
 import com.example.chatapp.presentation.navigation.Screen
 import com.example.chatapp.ui.theme.ChatAppTheme
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,6 +84,14 @@ private fun UsersScreenContent(
     state: UsersState,
     onChatClick: (receiverName: String, receiverId: String) -> Unit,
 ) {
+    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(15000L) // Update every 15 seconds
+            currentTime = System.currentTimeMillis()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -105,6 +121,7 @@ private fun UsersScreenContent(
             items(state.users, key = { it.uid }) { user ->
                 UserListItem(
                     user = user,
+                    currentTime,
                     onClick = {
                         onChatClick(user.displayName, user.uid)
                     },
@@ -116,7 +133,10 @@ private fun UsersScreenContent(
 }
 
 @Composable
-fun UserListItem(user: User, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun UserListItem(user: User, currentTime: Long, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val isOnline by remember(user, currentTime) {
+        derivedStateOf { (currentTime - user.lastSeenTimestamp) < 10_000 }
+    }
     Column(modifier = modifier.clickable(onClick = onClick)) {
         Row(
             modifier = Modifier
@@ -124,19 +144,34 @@ fun UserListItem(user: User, onClick: () -> Unit, modifier: Modifier = Modifier)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = user.displayName.firstOrNull()?.toString() ?: "U",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            Box {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = user.displayName.firstOrNull()?.toString() ?: "U",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                // Green dot for online status
+                if (isOnline) {
+                    Box(
+                        // FIX: The .align modifier is moved to be the first in the chain.
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF00C853)) // A bright green color
+                            .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
+                    )
+                }
             }
+
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
