@@ -135,7 +135,7 @@ private fun UsersScreenContent(
 @Composable
 fun UserListItem(user: User, currentTime: Long, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val isOnline by remember(user, currentTime) {
-        derivedStateOf { (currentTime - user.lastSeenTimestamp) < 10_000 }
+        derivedStateOf { (currentTime - user.lastSeenTimestamp) < 90_000 }
     }
     Column(modifier = modifier.clickable(onClick = onClick)) {
         Row(
