@@ -273,6 +273,41 @@ class ChatRepositoryImpl(
         }
     }
 
+    override suspend fun editMessage(
+        receiverId: String,
+        messageId: String,
+        newText: String
+    ): Result<Unit> {
+       return try {
+           val senderId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+           val chatRoomId = getChatRoomId(senderId, receiverId)
+           firestore.collection("chats").document(chatRoomId)
+               .collection("messages").document(messageId)
+               .update(mapOf("text" to newText, "isEdited" to true))
+               .await()
+           Result.success(Unit)
+       } catch (e: Exception) {
+           Result.failure(e)
+       }
+    }
+
+    override suspend fun deleteMessage(
+        receiverId: String,
+        messageId: String
+    ): Result<Unit> {
+        return try {
+            val senderId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+            val chatRoomId = getChatRoomId(senderId, receiverId)
+            firestore.collection("chats").document(chatRoomId)
+                .collection("messages").document(messageId)
+                .delete()
+                .await()
+            Result.success(Unit)
+        }catch (e: Exception){
+            Result.failure(e)
+        }
+    }
+
 
     // Helper to create a consistent chat room ID for any two users.
     private fun getChatRoomId(user1: String, user2: String): String {

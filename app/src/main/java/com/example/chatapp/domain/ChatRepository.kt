@@ -27,4 +27,7 @@ interface ChatRepository {
 
     suspend fun updateUserPresence(): Result<Unit>
 
+    suspend fun editMessage(receiverId: String, messageId: String, newText: String): Result<Unit>
+    suspend fun deleteMessage(receiverId: String, messageId: String): Result<Unit>
+
 }

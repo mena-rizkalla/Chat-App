@@ -151,6 +151,15 @@ fun MessageBubble(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.align(Alignment.End)
                     ) {
+
+                        if (uiMessage.message.isEdited) {
+                         Text(
+                             text = "(edited) ",
+                             style = MaterialTheme.typography.labelSmall,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                         )
+                        }
+
                         Text(
                             text = formatTimestamp(uiMessage.message.timestamp),
                             style = MaterialTheme.typography.labelMedium,
