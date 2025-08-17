@@ -12,6 +12,7 @@ import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.GetOnlineUsersUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
+import com.example.chatapp.domain.chatUseCases.GetUserProfileStreamUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
 import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
@@ -58,6 +59,6 @@ val domainModule = module {
     factory { EditMessageUseCase(get()) }
     factory { DeleteMessageUseCase(get()) }
 
-
+    factory { GetUserProfileStreamUseCase(get()) }
 
 }
