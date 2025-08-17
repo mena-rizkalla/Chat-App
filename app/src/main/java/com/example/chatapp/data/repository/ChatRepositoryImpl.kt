@@ -308,6 +308,19 @@ class ChatRepositoryImpl(
         }
     }
 
+    override fun getUserProfileStream(uid: String): Flow<User?> = callbackFlow {
+        val docRef = firestore.collection("users").document(uid)
+        val listener = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            trySend(snapshot?.toObject(User::class.java))
+        }
+        awaitClose { listener.remove() }
+    }
+
+
 
     // Helper to create a consistent chat room ID for any two users.
     private fun getChatRoomId(user1: String, user2: String): String {
