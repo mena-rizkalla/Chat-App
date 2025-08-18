@@ -64,22 +64,32 @@ fun SignUpScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     // Navigate upon successful sign-up
-    LaunchedEffect(uiState.isSignedUp) {
-        if (uiState.isSignedUp) {
-            navController.navigate(Screen.MainScreen.route) {
-                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is SignUpEvent.NavigateToMain -> {
+                    navController.navigate("main_route") {
+                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                    }
+                }
+                is SignUpEvent.NavigateBack -> {
+                    navController.popBackStack()
+                }
+                is SignUpEvent.NavigateToLogin -> {
+                    navController.navigate(Screen.LoginScreen.route)
+                }
             }
         }
     }
 
     SignUpScreenContent(
         uiState = uiState,
-        onDisplayNameChange = viewModel::onDisplayNameChange,
-        onEmailChange = viewModel::onEmailChange,
-        onPasswordChange = viewModel::onPasswordChange,
-        onSignUpClick = { viewModel.signUp {} },
-        onBackClick = { navController.popBackStack() },
-        onLoginClick = { navController.navigate(Screen.LoginScreen.route) }
+        onDisplayNameChange = { viewModel.onAction(SignUpAction.OnDisplayNameChange(it)) },
+        onEmailChange = { viewModel.onAction(SignUpAction.OnEmailChange(it)) },
+        onPasswordChange = { viewModel.onAction(SignUpAction.OnPasswordChange(it)) },
+        onSignUpClick = { viewModel.onAction(SignUpAction.SignUp) },
+        onBackClick = { viewModel.onAction(SignUpAction.NavigateBack) },
+        onLoginClick = { viewModel.onAction(SignUpAction.NavigateToLogin) }
     )
 }
 
