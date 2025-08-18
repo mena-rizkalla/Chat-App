@@ -17,6 +17,7 @@ class AuthRepositoryImpl(
 
     override suspend fun signIn(email: String, password: String): Result<Unit> {
         return try {
+            firestore.enableNetwork().await()
             auth.signInWithEmailAndPassword(email, password).await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -26,6 +27,7 @@ class AuthRepositoryImpl(
 
     override suspend fun signUp(email: String, password: String, displayName: String): Result<Unit> {
         return try {
+            firestore.enableNetwork().await()
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = authResult.user
             if (firebaseUser != null) {
@@ -54,7 +56,12 @@ class AuthRepositoryImpl(
         }
     }
 
-    override fun signOut() {
+    override suspend fun signOut() {
+        try {
+            firestore.disableNetwork().await()
+            firestore.clearPersistence().await()
+        } catch (e: Exception) {
+        }
         auth.signOut()
     }
 }
