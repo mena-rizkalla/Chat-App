@@ -60,11 +60,18 @@ fun GlobalChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
-    var selectedMessageId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
+        }
+    }
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is GlobalChatEvent.NavigateBack -> navController.popBackStack()
+            }
         }
     }
 
@@ -73,7 +80,7 @@ fun GlobalChatScreen(
             TopAppBar(
                 title = { Text("Global Chat", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { viewModel.onAction(GlobalChatAction.NavigateBack) }) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -84,16 +91,16 @@ fun GlobalChatScreen(
             Column {
                 SuggestionChips(
                     suggestions = uiState.suggestedReplies,
-                    onSuggestionClick = viewModel::useSuggestion
+                    onSuggestionClick = { viewModel.onAction(GlobalChatAction.UseSuggestion(it)) }
                 )
                 ReplyPreview(
                     uiMessage = uiState.replyingToMessage,
-                    onCancelReply = viewModel::onCancelReply
+                    onCancelReply = { viewModel.onAction(GlobalChatAction.CancelReply) }
                 )
                 ChatInput(
                     message = uiState.currentMessage,
-                    onMessageChange = viewModel::onMessageChange,
-                    onSendClick = viewModel::sendMessage
+                    onMessageChange = { viewModel.onAction(GlobalChatAction.OnMessageChange(it)) },
+                    onSendClick = { viewModel.onAction(GlobalChatAction.SendMessage) }
                 )
             }
         },
@@ -115,8 +122,8 @@ fun GlobalChatScreen(
                             uiMessage = uiMessage.copy(shouldShowSenderName = true),
                             isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
                             receiverLastSeenTimestamp = 0L,
-                            onLongPress = { msgId -> selectedMessageId = msgId },
-                            onStartReply = { msg -> viewModel.onStartReply(msg)}
+                            onLongPress = { viewModel.onAction(GlobalChatAction.OnMessageLongPress(uiMessage.message.messageId)) },
+                            onStartReply = {  viewModel.onAction(GlobalChatAction.StartReply(uiMessage))}
                         )
                     }
 
@@ -125,7 +132,7 @@ fun GlobalChatScreen(
                         if (lastMessage != null && lastMessage.message.senderId != uiState.currentUserId && uiState.suggestedReplies.isEmpty()) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                                 SuggestionButton(
-                                    onClick = viewModel::generateReplySuggestions,
+                                    onClick = { viewModel.onAction(GlobalChatAction.GenerateReplySuggestions) },
                                     isLoading = uiState.isGeneratingSuggestions,
                                     modifier = Modifier.padding(start = 12.dp)
                                 )
@@ -136,15 +143,14 @@ fun GlobalChatScreen(
             }
 
             AnimatedVisibility(
-                visible = selectedMessageId != null,
+                visible = uiState.selectedMessageIdForReaction != null,
                 enter = fadeIn() + slideInVertically { it / 2 },
                 exit = slideOutVertically { it / 2 } + fadeOut(),
                 modifier = Modifier.align(Alignment.Center)
             ) {
                 ReactionPalette(
                     onReactionSelected = { reaction ->
-                        selectedMessageId?.let { viewModel.toggleReaction(it, reaction) }
-                        selectedMessageId = null
+                        viewModel.onAction(GlobalChatAction.ToggleReaction(reaction))
                     }
                 )
             }
