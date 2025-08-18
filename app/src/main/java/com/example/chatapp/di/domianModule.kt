@@ -8,13 +8,13 @@ import com.example.chatapp.domain.authUseCases.SignUpUseCase
 import com.example.chatapp.domain.chatUseCases.DeleteMessageUseCase
 import com.example.chatapp.domain.chatUseCases.EditMessageUseCase
 import com.example.chatapp.domain.chatUseCases.GetChatMessagesUseCase
-import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
+import com.example.chatapp.domain.globalChatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetLastSeenUseCase
 import com.example.chatapp.domain.chatUseCases.GetOnlineUsersUseCase
 import com.example.chatapp.domain.chatUseCases.GetTypingStatusUseCase
 import com.example.chatapp.domain.chatUseCases.GetUserProfileStreamUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
-import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
+import com.example.chatapp.domain.globalChatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.SendMessageUseCase
 import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
 import com.example.chatapp.domain.chatUseCases.TogglePrivateMessageReactionUseCase
