@@ -24,7 +24,7 @@ class ForgotPasswordViewModel(private val sendPasswordResetUseCase: SendPassword
             is ForgotPasswordAction.NavigateBack -> navigateBack()
         }
     }
-    fun onEmailChange(email: String) { _uiState.value = _uiState.value.copy(email = email) }
+    private fun onEmailChange(email: String) { _uiState.value = _uiState.value.copy(email = email) }
 
     private fun sendPasswordResetEmail() {
         val email = uiState.value.email
