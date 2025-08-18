@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,6 +35,19 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is ProfileEvent.NavigateToLogin -> {
+                    navController.navigate(Screen.LoginScreen.route) {
+                        // Clear the entire back stack
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -52,13 +66,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = user.email, style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(32.dp))
-                Button(onClick = {
-                    viewModel.signOut {
-                        navController.navigate(Screen.LoginScreen.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
-                    }
-                }) {
+                Button(onClick = { viewModel.onAction(ProfileAction.SignOut) }) {
                     Icon(Icons.Default.ExitToApp, contentDescription = "Sign Out")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Sign Out")
