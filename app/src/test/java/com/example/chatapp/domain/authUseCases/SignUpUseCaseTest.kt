@@ -2,19 +2,20 @@ package com.example.chatapp.domain.authUseCases
 
 import com.example.chatapp.domain.AuthRepository
 import kotlinx.coroutines.runBlocking
-import org.junit.Before
-import org.junit.Test
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
 
 class SignUpUseCaseTest {
 
     private lateinit var mockAuthRepository: AuthRepository
     private lateinit var signUpUseCase: SignUpUseCase
 
-    @Before
+    @BeforeEach
     fun setUp() {
         mockAuthRepository = mock()
         signUpUseCase = SignUpUseCase(mockAuthRepository)

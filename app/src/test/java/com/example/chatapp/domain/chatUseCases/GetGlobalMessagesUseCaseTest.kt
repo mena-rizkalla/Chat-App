@@ -1,6 +1,7 @@
 package com.example.chatapp.domain.chatUseCases
 
 import com.example.chatapp.domain.ChatRepository
+import com.example.chatapp.domain.globalChatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.model.Message
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow

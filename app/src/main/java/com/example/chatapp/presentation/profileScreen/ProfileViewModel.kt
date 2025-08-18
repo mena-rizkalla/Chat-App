@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
 import com.example.chatapp.domain.authUseCases.SignOutUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -14,6 +16,9 @@ class ProfileViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileState())
     val uiState = _uiState.asStateFlow()
+
+    private val _eventFlow = MutableSharedFlow<ProfileEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     init {
         loadCurrentUser()
@@ -27,8 +32,16 @@ class ProfileViewModel(
         }
     }
 
-    fun signOut(onSignOut: () -> Unit) {
-        signOutUseCase()
-        onSignOut()
+    fun onAction(action: ProfileAction) {
+        when (action) {
+            is ProfileAction.SignOut -> signOut()
+        }
+    }
+
+    private fun signOut() {
+        viewModelScope.launch {
+            signOutUseCase()
+            _eventFlow.emit(ProfileEvent.NavigateToLogin)
+        }
     }
 }

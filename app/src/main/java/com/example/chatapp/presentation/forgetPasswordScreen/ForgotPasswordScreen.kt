@@ -13,6 +13,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,19 +26,40 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.example.chatapp.ui.theme.ChatAppTheme
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ForgotPasswordScreen(navController: NavController, viewModel: ForgotPasswordViewModel = koinViewModel()) {
+fun ForgotPasswordScreen(
+    navController: NavController,
+    viewModel: ForgotPasswordViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is ForgotPasswordEvent.NavigateBack -> {
+                    navController.popBackStack()
+                }
+                is ForgotPasswordEvent.ResetLinkSent -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Password reset email sent!")
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Reset Password") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { viewModel.onAction(ForgotPasswordAction.NavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -72,7 +96,7 @@ fun ForgotPasswordScreen(navController: NavController, viewModel: ForgotPassword
 
             OutlinedTextField(
                 value = uiState.email,
-                onValueChange = { viewModel.onEmailChange(it) },
+                onValueChange = { viewModel.onAction(ForgotPasswordAction.OnEmailChange(it)) },
                 label = { Text("Email Address") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -92,20 +116,9 @@ fun ForgotPasswordScreen(navController: NavController, viewModel: ForgotPassword
                 )
             }
 
-            if (uiState.successMessage != null) {
-                Text(
-                    text = uiState.successMessage!!,
-                    color = Color(0xFF2E7D32), // A nice, theme-agnostic success green
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-            }
 
             Button(
-                onClick = {
-                    viewModel.sendPasswordResetEmail({})
-                },
+                onClick = { viewModel.onAction(ForgotPasswordAction.SendResetLink) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),

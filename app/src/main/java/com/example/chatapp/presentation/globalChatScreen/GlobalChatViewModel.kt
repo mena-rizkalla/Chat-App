@@ -4,18 +4,21 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
-import com.example.chatapp.domain.chatUseCases.GetGlobalMessagesUseCase
+import com.example.chatapp.domain.globalChatUseCases.GetGlobalMessagesUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
-import com.example.chatapp.domain.chatUseCases.SendGlobalMessageUseCase
+import com.example.chatapp.domain.globalChatUseCases.SendGlobalMessageUseCase
 import com.example.chatapp.domain.chatUseCases.ToggleGlobalMessageReactionUseCase
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.Reaction
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class GlobalChatViewModel(
@@ -29,8 +32,26 @@ class GlobalChatViewModel(
     private val _uiState = MutableStateFlow(GlobalChatState())
     val uiState = _uiState.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<GlobalChatEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
     init {
         loadData()
+    }
+
+    fun onAction(action: GlobalChatAction) {
+        when (action) {
+            is GlobalChatAction.OnMessageChange -> onMessageChange(action.message)
+            is GlobalChatAction.SendMessage -> sendMessage()
+            is GlobalChatAction.StartReply -> onStartReply(action.uiMessage)
+            is GlobalChatAction.CancelReply -> onCancelReply()
+            is GlobalChatAction.OnMessageLongPress -> onMessageLongPress(action.messageId)
+            is GlobalChatAction.ToggleReaction -> toggleReaction(action.reaction)
+            is GlobalChatAction.DismissReactionPalette -> dismissReactionPalette()
+            is GlobalChatAction.GenerateReplySuggestions -> generateReplySuggestions()
+            is GlobalChatAction.UseSuggestion -> useSuggestion(action.suggestion)
+            is GlobalChatAction.NavigateBack -> navigateBack()
+        }
     }
 
     private fun loadData() {
@@ -89,11 +110,11 @@ class GlobalChatViewModel(
         }
     }
 
-    fun onMessageChange(message: String) {
+    private fun onMessageChange(message: String) {
         _uiState.value = _uiState.value.copy(currentMessage = message)
     }
 
-    fun sendMessage() {
+    private fun sendMessage() {
         viewModelScope.launch {
             val text = uiState.value.currentMessage
             val replyingTo = uiState.value.replyingToMessage
@@ -109,13 +130,17 @@ class GlobalChatViewModel(
         }
     }
 
-    fun toggleReaction(messageId: String, reaction: Reaction) {
-        viewModelScope.launch {
+    private fun toggleReaction(reaction: Reaction) = viewModelScope.launch {
+        uiState.value.selectedMessageIdForReaction?.let { messageId ->
             toggleReactionUseCase(messageId = messageId, reaction = reaction)
+            dismissReactionPalette() // Hide palette after selection
         }
     }
+    private fun dismissReactionPalette() {
+        _uiState.update { it.copy(selectedMessageIdForReaction = null) }
+    }
 
-    fun generateReplySuggestions() {
+    private fun generateReplySuggestions() {
         val lastMessage = uiState.value.messages.lastOrNull { it.message.senderId != uiState.value.currentUserId }
         if (lastMessage == null || uiState.value.isGeneratingSuggestions) return
 
@@ -133,18 +158,26 @@ class GlobalChatViewModel(
         }
     }
 
-    fun useSuggestion(suggestion: String) {
+    private fun useSuggestion(suggestion: String) {
         _uiState.value = _uiState.value.copy(
             currentMessage = suggestion,
             suggestedReplies = emptyList()
         )
     }
 
-    fun onStartReply(uiMessage: UiMessage) {
+    private fun onStartReply(uiMessage: UiMessage) {
          _uiState.value = _uiState.value.copy(replyingToMessage = uiMessage)
     }
 
-    fun onCancelReply() {
+    private fun onCancelReply() {
          _uiState.value = _uiState.value.copy(replyingToMessage = null)
+    }
+
+    private fun onMessageLongPress(messageId: String) {
+        _uiState.update { it.copy(selectedMessageIdForReaction = messageId) }
+    }
+
+    private fun navigateBack() = viewModelScope.launch {
+        _eventFlow.emit(GlobalChatEvent.NavigateBack)
     }
 }

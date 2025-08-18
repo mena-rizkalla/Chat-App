@@ -6,7 +6,9 @@ import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
 import com.example.chatapp.domain.authUseCases.SignOutUseCase
 import com.example.chatapp.domain.chatUseCases.GetOnlineUsersUseCase
 import com.example.chatapp.domain.chatUseCases.GetUsersUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -15,11 +17,13 @@ import kotlinx.coroutines.launch
 
 class UsersViewModel(
     private val getOnlineUsersUseCase: GetOnlineUsersUseCase,
-    private val signOutUseCase: SignOutUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UsersState())
     val uiState = _uiState.asStateFlow()
+
+    private val _eventFlow = MutableSharedFlow<UsersEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     init {
         loadUsers()
@@ -40,8 +44,15 @@ class UsersViewModel(
             }.launchIn(viewModelScope)
     }
 
-    fun signOut(onSuccess: () -> Unit) {
-        signOutUseCase()
-        onSuccess()
+    fun onAction(action: UsersAction) {
+        when (action) {
+            is UsersAction.OnUserClick -> onUserClick(action.user)
+        }
+    }
+
+    private fun onUserClick(user: com.example.chatapp.domain.model.User) {
+        viewModelScope.launch {
+            _eventFlow.emit(UsersEvent.NavigateToChat(receiverId = user.uid, receiverName = user.displayName))
+        }
     }
 }

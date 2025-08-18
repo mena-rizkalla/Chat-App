@@ -65,15 +65,26 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is UsersEvent.NavigateToChat -> {
+                    navController.navigate(
+                        Screen.ChatScreen.createRoute(
+                            receiverName = event.receiverName,
+                            receiverId = event.receiverId
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     UsersScreenContent(
         state = uiState,
-        onChatClick = { receiverName, receiverId ->
-            navController.navigate(
-                Screen.ChatScreen.createRoute(
-                    receiverName = receiverName,
-                    receiverId = receiverId
-                )
-            )
+        onUserClick = { user ->
+            viewModel.onAction(UsersAction.OnUserClick(user))
         }
     )
 }
@@ -82,7 +93,7 @@ fun UsersScreen(navController: NavController, viewModel: UsersViewModel = koinVi
 @Composable
 private fun UsersScreenContent(
     state: UsersState,
-    onChatClick: (receiverName: String, receiverId: String) -> Unit,
+    onUserClick: (User) -> Unit,
 ) {
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -123,7 +134,7 @@ private fun UsersScreenContent(
                     user = user,
                     currentTime,
                     onClick = {
-                        onChatClick(user.displayName, user.uid)
+                        onUserClick(user)
                     },
                     modifier = Modifier.animateItem()
                 )
@@ -197,7 +208,7 @@ fun UsersScreenPreview() {
     ChatAppTheme {
         UsersScreenContent(
             state = UsersState(),
-            onChatClick = { _, _ -> },
+            onUserClick = {},
         )
     }
 }

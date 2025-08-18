@@ -91,43 +91,42 @@ fun ChatScreen(
         }
     }
 
-    if (uiState.messageForAction != null) {
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is ChatEvent.NavigateBack -> navController.popBackStack()
+            }
+        }
+    }
+
+    uiState.messageForAction?.let {
         MessageActionsBottomSheet(
-            uiMessage = uiState.messageForAction!!,
+            uiMessage = it,
             currentUserId = uiState.currentUserId,
-            onDismiss = viewModel::onDismissMessageActions,
-            onReply = {
-                viewModel.onStartReply(uiState.messageForAction!!)
-                viewModel.onDismissMessageActions()
-            },
-            onEdit = {
-                viewModel.onStartEdit()
-                viewModel.onDismissMessageActions()
-            },
-            onDelete = {
-                viewModel.onStartDelete()
-            },
+            onDismiss = { viewModel.onAction(ChatAction.DismissMessageActions) },
+            onReply = { viewModel.onAction(ChatAction.StartReply(it)) },
+            onEdit = { viewModel.onAction(ChatAction.StartEdit) },
+            onDelete = { viewModel.onAction(ChatAction.StartDelete) },
             onReact = { reaction ->
-                viewModel.toggleReaction(uiState.messageForAction!!.message.messageId, reaction)
-                viewModel.onDismissMessageActions()
+                viewModel.onAction(ChatAction.ToggleReaction(it.message.messageId, reaction))
+                viewModel.onAction(ChatAction.DismissMessageActions)
             }
         )
     }
 
-
     if (uiState.showDeleteConfirmDialog) {
         AlertDialog(
-            onDismissRequest = viewModel::onCancelDelete,
+            onDismissRequest = { viewModel.onAction(ChatAction.CancelDelete) },
             title = { Text("Delete Message") },
             text = { Text("Are you sure you want to permanently delete this message?") },
             confirmButton = {
                 Button(
-                    onClick = viewModel::onConfirmDelete,
+                    onClick = { viewModel.onAction(ChatAction.ConfirmDelete) },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) { Text("Delete") }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::onCancelDelete) { Text("Cancel") }
+                TextButton(onClick = { viewModel.onAction(ChatAction.CancelDelete) }) { Text("Cancel") }
             }
         )
     }
@@ -158,7 +157,7 @@ fun ChatScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { viewModel.onAction(ChatAction.NavigateBack)  }) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -169,24 +168,24 @@ fun ChatScreen(
             Column {
                 SuggestionChips(
                     suggestions = uiState.suggestedReplies,
-                    onSuggestionClick = viewModel::useSuggestion
+                    onSuggestionClick = { viewModel.onAction(ChatAction.UseSuggestion(it)) }
                 )
                 ReplyPreview(
                     uiMessage = uiState.replyingToMessage,
-                    onCancelReply = viewModel::onCancelReply
+                    onCancelReply = { viewModel.onAction(ChatAction.CancelReply) }
                 )
                 ChatInput(
                     message = uiState.currentMessage,
-                    onMessageChange = viewModel::onMessageChange,
+                    onMessageChange = { viewModel.onAction(ChatAction.OnMessageChange(it)) },
                     onSendClick = {
                         if (uiState.editingMessage != null) {
-                            viewModel.onConfirmEdit()
+                            viewModel.onAction(ChatAction.ConfirmEdit)
                         } else {
-                            viewModel.sendMessage()
+                            viewModel.onAction(ChatAction.SendMessage)
                         }
                     },
                     isEditing = uiState.editingMessage != null,
-                    onCancelEdit = viewModel::onCancelEdit
+                    onCancelEdit = { viewModel.onAction(ChatAction.CancelEdit) }
                 )
             }
         },
@@ -207,8 +206,8 @@ fun ChatScreen(
                             uiMessage =uiMessage,
                             isFromCurrentUser = uiMessage.message.senderId == uiState.currentUserId,
                             receiverLastSeenTimestamp = uiState.receiverLastSeenTimestamp,
-                            onLongPress = { viewModel.onMessageActionSelected(uiMessage) },
-                            onStartReply = { viewModel.onStartReply(uiMessage)}
+                            onLongPress = { viewModel.onAction(ChatAction.OnMessageLongPress(uiMessage)) },
+                            onStartReply = { viewModel.onAction(ChatAction.StartReply(uiMessage)) }
                         )
                     }
 
@@ -218,7 +217,7 @@ fun ChatScreen(
                         if (lastMessage != null && lastMessage.message.senderId != uiState.currentUserId && uiState.suggestedReplies.isEmpty()) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                                 SuggestionButton(
-                                    onClick = viewModel::generateReplySuggestions,
+                                    onClick = { viewModel.onAction(ChatAction.GenerateReplySuggestions) },
                                     isLoading = uiState.isGeneratingSuggestions,
                                     modifier = Modifier.padding(start = 12.dp)
                                 )
@@ -242,7 +241,7 @@ fun ChatScreen(
             ) {
                 ReactionPalette(
                     onReactionSelected = { reaction ->
-                        selectedMessageId?.let { viewModel.toggleReaction(it, reaction) }
+                        selectedMessageId?.let { viewModel.onAction(ChatAction.ToggleReaction(it, reaction))}
                         selectedMessageId = null
                     }
                 )

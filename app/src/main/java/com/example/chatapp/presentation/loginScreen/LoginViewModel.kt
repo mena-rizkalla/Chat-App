@@ -5,8 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.authUseCases.GetCurrentUserUseCase
 import com.example.chatapp.domain.authUseCases.SignInUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 class LoginViewModel(
     private val signInUseCase: SignInUseCase,
@@ -15,29 +18,55 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow(LoginState())
     val uiState = _uiState.asStateFlow()
 
-    fun onEmailChange(email: String) {
-        _uiState.value = _uiState.value.copy(email = email)
+    private val _eventFlow = MutableSharedFlow<LoginEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
+    fun onAction(action: LoginAction) {
+        when (action) {
+            is LoginAction.OnEmailChange -> onEmailChange(action.email)
+            is LoginAction.OnPasswordChange -> onPasswordChange(action.password)
+            is LoginAction.SignIn -> signIn()
+            is LoginAction.NavigateToSignUp -> navigateToSignUp()
+            is LoginAction.NavigateToForgotPassword -> navigateToForgotPassword()
+        }
     }
 
-    fun onPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(password = password)
+    private fun onEmailChange(email: String) {
+        _uiState.update { it.copy(email = email, error = null) }
     }
 
-    fun signIn(onSuccess: () -> Unit) {
+    private fun onPasswordChange(password: String) {
+        _uiState.update { it.copy(password = password, error = null) }
+    }
 
+    private fun signIn() {
         if (!Patterns.EMAIL_ADDRESS.matcher(uiState.value.email).matches()) {
-            _uiState.value = _uiState.value.copy(error = "Please enter a valid email address.")
+            _uiState.update { it.copy(error = "Please enter a valid email address.") }
             return
         }
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val result = signInUseCase(uiState.value.email, uiState.value.password)
-            result.onSuccess {
-                _uiState.value = _uiState.value.copy(isLoading = false, isSignedIn = true)
-                onSuccess()
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(isLoading = false, error = it.message)
-            }
+        if (uiState.value.password.isBlank()) {
+            _uiState.update { it.copy(error = "Password cannot be empty.") }
+            return
         }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            signInUseCase(uiState.value.email, uiState.value.password)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
+                    _eventFlow.emit(LoginEvent.NavigateToMain)
+                }
+                .onFailure { exception ->
+                    _uiState.update { it.copy(isLoading = false, error = exception.message) }
+                }
+        }
+    }
+
+    private fun navigateToSignUp() = viewModelScope.launch {
+        _eventFlow.emit(LoginEvent.NavigateToSignUp)
+    }
+
+    private fun navigateToForgotPassword() = viewModelScope.launch {
+        _eventFlow.emit(LoginEvent.NavigateToForgotPassword)
     }
 }
