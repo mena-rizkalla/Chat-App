@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.domain.geminiUseCase.GetGeminiResponseUseCase
 import com.example.chatapp.domain.model.Message
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -14,16 +16,31 @@ class AiChatViewModel(
     private val _uiState = MutableStateFlow(AiChatState())
     val uiState = _uiState.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<Event>()
+    val eventFlow = _eventFlow.asSharedFlow()
     companion object {
         const val USER_ID = "user"
         const val GEMINI_ID = "gemini"
     }
 
-    fun onMessageChange(message: String) {
+    fun onAction(action: Action) {
+        when (action) {
+            is Action.OnMessageChange -> onMessageChange(action.message)
+            is Action.SendMessage -> sendMessage()
+            is Action.NavigateBack -> navigateBack()
+        }
+    }
+    private fun navigateBack() {
+        viewModelScope.launch {
+            _eventFlow.emit(Event.NavigateBack)
+        }
+    }
+
+    private fun onMessageChange(message: String) {
         _uiState.value = _uiState.value.copy(currentMessage = message)
     }
 
-    fun sendMessage() {
+    private fun sendMessage() {
         val userMessageText = uiState.value.currentMessage
         if (userMessageText.isBlank()) return
 

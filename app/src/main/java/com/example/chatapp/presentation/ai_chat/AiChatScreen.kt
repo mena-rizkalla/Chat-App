@@ -51,6 +51,16 @@ fun AiChatScreen(
         }
     }
 
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is Event.NavigateBack -> {
+                    navController.popBackStack()
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -62,7 +72,7 @@ fun AiChatScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { viewModel.onAction(Action.NavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
@@ -72,8 +82,10 @@ fun AiChatScreen(
         bottomBar = {
             ChatInput(
                 message = uiState.currentMessage,
-                onMessageChange = viewModel::onMessageChange,
-                onSendClick = viewModel::sendMessage
+                onMessageChange = {
+                    viewModel.onAction(Action.OnMessageChange(it))
+                },
+                onSendClick = {viewModel.onAction(Action.SendMessage)}
             )
         },
         containerColor = MaterialTheme.colorScheme.background
