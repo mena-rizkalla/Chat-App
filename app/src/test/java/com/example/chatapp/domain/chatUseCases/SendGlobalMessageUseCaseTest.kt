@@ -1,6 +1,7 @@
 package com.example.chatapp.domain.chatUseCases
 
 import com.example.chatapp.domain.ChatRepository
+import com.example.chatapp.domain.globalChatUseCases.SendGlobalMessageUseCase
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
