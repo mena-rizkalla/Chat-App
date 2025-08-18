@@ -18,7 +18,9 @@ import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.Reaction
 import com.example.chatapp.presentation.globalChatScreen.UiMessage
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -48,6 +50,8 @@ class ChatViewModel(
     private val _uiState = MutableStateFlow(ChatState())
     val uiState = _uiState.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<ChatEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
     private val textInputFlow = MutableStateFlow("")
     private val userNames = mutableMapOf<String, String>()
 
@@ -125,12 +129,35 @@ class ChatViewModel(
         }
     }
 
-    fun onMessageChange(message: String) {
+    fun onAction(action: ChatAction) {
+        when (action) {
+            is ChatAction.OnMessageChange -> onMessageChange(action.message)
+            is ChatAction.SendMessage -> sendMessage()
+            is ChatAction.ToggleReaction -> toggleReaction(action.messageId, action.reaction)
+            is ChatAction.GenerateReplySuggestions -> generateReplySuggestions()
+            is ChatAction.UseSuggestion -> useSuggestion(action.suggestion)
+            is ChatAction.OnMessageLongPress -> onMessageActionSelected(action.uiMessage)
+            is ChatAction.DismissMessageActions -> onDismissMessageActions()
+            is ChatAction.StartReply -> onStartReply(action.uiMessage)
+            is ChatAction.CancelReply -> onCancelReply()
+            is ChatAction.StartEdit -> onStartEdit()
+            is ChatAction.CancelEdit -> onCancelEdit()
+            is ChatAction.ConfirmEdit -> onConfirmEdit()
+            is ChatAction.StartDelete -> onStartDelete()
+            is ChatAction.CancelDelete -> onCancelDelete()
+            is ChatAction.ConfirmDelete -> onConfirmDelete()
+            is ChatAction.NavigateBack -> navigateBack()
+        }
+    }
+
+    private fun navigateBack() = viewModelScope.launch { _eventFlow.emit(ChatEvent.NavigateBack) }
+
+    private fun onMessageChange(message: String) {
         _uiState.value = _uiState.value.copy(currentMessage = message)
         textInputFlow.value = message
     }
 
-    fun sendMessage() {
+    private fun sendMessage() {
         viewModelScope.launch {
             val text = uiState.value.currentMessage
             val replyingTo = uiState.value.replyingToMessage
@@ -152,7 +179,7 @@ class ChatViewModel(
         }
     }
 
-    fun toggleReaction(messageId: String, reaction: Reaction) {
+    private fun toggleReaction(messageId: String, reaction: Reaction) {
         viewModelScope.launch {
             toggleReactionUseCase(
                 receiverId = receiverId,
@@ -163,7 +190,7 @@ class ChatViewModel(
         }
     }
 
-    fun generateReplySuggestions() {
+    private fun generateReplySuggestions() {
         val lastMessage = uiState.value.messages.lastOrNull { it.message.senderId != uiState.value.currentUserId }
         if (lastMessage == null || uiState.value.isGeneratingSuggestions) return
 
@@ -182,30 +209,30 @@ class ChatViewModel(
         }
     }
 
-    fun useSuggestion(suggestion: String) {
+    private fun useSuggestion(suggestion: String) {
         _uiState.value = _uiState.value.copy(
             currentMessage = suggestion,
             suggestedReplies = emptyList() // Clear suggestions after one is used
         )
     }
 
-    fun onStartReply(uiMessage: UiMessage) {
-        _uiState.value = _uiState.value.copy(replyingToMessage = uiMessage)
+    private fun onStartReply(uiMessage: UiMessage) {
+        _uiState.value = _uiState.value.copy(replyingToMessage = uiMessage , messageForAction = null)
     }
 
-    fun onCancelReply() {
+    private fun onCancelReply() {
         _uiState.value = _uiState.value.copy(replyingToMessage = null)
     }
 
-    fun onMessageActionSelected(uiMessage: UiMessage) {
+    private fun onMessageActionSelected(uiMessage: UiMessage) {
         _uiState.value = _uiState.value.copy(messageForAction = uiMessage)
     }
 
-    fun onDismissMessageActions() {
+    private fun onDismissMessageActions() {
         _uiState.value = _uiState.value.copy(messageForAction = null)
     }
 
-    fun onStartEdit() {
+    private fun onStartEdit() {
         val messageToEdit = uiState.value.messageForAction
         _uiState.value = _uiState.value.copy(
             editingMessage = messageToEdit,
@@ -214,11 +241,11 @@ class ChatViewModel(
         )
     }
 
-    fun onCancelEdit() {
+    private fun onCancelEdit() {
         _uiState.value = _uiState.value.copy(editingMessage = null, currentMessage = "")
     }
 
-    fun onConfirmEdit() {
+    private fun onConfirmEdit() {
         viewModelScope.launch {
             val messageToEdit = uiState.value.editingMessage
             val newText = uiState.value.currentMessage
@@ -229,15 +256,15 @@ class ChatViewModel(
         }
     }
 
-    fun onStartDelete() {
+    private fun onStartDelete() {
         _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = true)
     }
 
-    fun onCancelDelete() {
+    private fun onCancelDelete() {
         _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = false, messageForAction = null)
     }
 
-    fun onConfirmDelete() {
+    private fun onConfirmDelete() {
         viewModelScope.launch {
             val messageToDelete = uiState.value.messageForAction
             if (messageToDelete != null) {
