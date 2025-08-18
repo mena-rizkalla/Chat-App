@@ -3,11 +3,11 @@ package com.example.chatapp.domain.authUseCases
 import com.example.chatapp.domain.AuthRepository
 import com.example.chatapp.domain.model.User
 import junit.framework.TestCase.assertEquals
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import kotlin.test.Test
 
 
 class GetCurrentUserUseCaseTest {
@@ -16,7 +16,7 @@ class GetCurrentUserUseCaseTest {
 
     private val mockFirebaseUser: User? = mock()
 
-    @Before
+    @BeforeEach
     fun setUp() {
         mockAuthRepository = mock()
         getCurrentUserUseCase = GetCurrentUserUseCase(mockAuthRepository)

@@ -1,4 +1,4 @@
-package com.example.chatapp.domain.chatUseCases
+package com.example.chatapp.domain.globalChatUseCases
 
 import com.example.chatapp.domain.ChatRepository
 
