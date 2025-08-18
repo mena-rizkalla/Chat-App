@@ -37,6 +37,24 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
     val uiState by viewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
 
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is LoginEvent.NavigateToMain -> {
+                    navController.navigate("main_route") {
+                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                    }
+                }
+                is LoginEvent.NavigateToSignUp -> {
+                    navController.navigate(Screen.SignUpScreen.route)
+                }
+                is LoginEvent.NavigateToForgotPassword -> {
+                    navController.navigate(Screen.ForgotPasswordScreen.route)
+                }
+            }
+        }
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
@@ -65,7 +83,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
 
             OutlinedTextField(
                 value = uiState.email,
-                onValueChange = { viewModel.onEmailChange(it) },
+                onValueChange = { viewModel.onAction(LoginAction.OnEmailChange(it)) },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -77,7 +95,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
 
             OutlinedTextField(
                 value = uiState.password,
-                onValueChange = { viewModel.onPasswordChange(it) },
+                onValueChange = { viewModel.onAction(LoginAction.OnPasswordChange(it)) },
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -98,7 +116,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = { navController.navigate(Screen.ForgotPasswordScreen.route) }) {
+                TextButton(onClick = { viewModel.onAction(LoginAction.NavigateToForgotPassword) }) {
                     Text("Forgot password?")
                 }
             }
@@ -115,11 +133,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
 
             Button(
                 onClick = {
-                    viewModel.signIn {
-                        navController.navigate(Screen.MainScreen.route) {
-                            popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                        }
-                    }
+                    viewModel.onAction(LoginAction.SignIn)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,7 +156,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = koinVi
                 Text("Don't have an account? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ClickableText(
                     text = AnnotatedString("Sign Up"),
-                    onClick = { navController.navigate(Screen.SignUpScreen.route) },
+                    onClick = { viewModel.onAction(LoginAction.NavigateToSignUp) },
                     style = TextStyle(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
