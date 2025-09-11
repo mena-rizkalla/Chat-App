@@ -34,14 +34,19 @@ class ProfileViewModel(
 
     fun onAction(action: ProfileAction) {
         when (action) {
-            is ProfileAction.SignOut -> signOut()
+            is ProfileAction.SignOut -> triggerSignOutEvent()
         }
     }
 
-    private fun signOut() {
+    private fun triggerSignOutEvent() {
+        viewModelScope.launch {
+            _eventFlow.emit(ProfileEvent.NavigateToLogin)
+        }
+    }
+
+    fun performSignOut() {
         viewModelScope.launch {
             signOutUseCase()
-            _eventFlow.emit(ProfileEvent.NavigateToLogin)
         }
     }
 }

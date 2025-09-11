@@ -44,6 +44,7 @@ fun ProfileScreen(
                         // Clear the entire back stack
                         popUpTo(navController.graph.id) { inclusive = true }
                     }
+                    viewModel.performSignOut()
                 }
             }
         }
