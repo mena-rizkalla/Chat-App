@@ -133,16 +133,19 @@ class ChatRepositoryImpl(
         val messageRef = firestore.collection("chats").document(chatRoomId).collection("messages").document(messageId)
 
         return try {
-            firestore.runTransaction { transaction ->
-                val snapshot = transaction.get(messageRef)
-                val currentReactions = snapshot.get("reactions") as? Map<String, String> ?: emptyMap()
+            val document = messageRef.get().await()
+            val currentReactions = document.get("reactions") as? Map<String, String> ?: emptyMap()
 
-                if (currentReactions[senderId] == reaction.key) {
-                    transaction.update(messageRef, "reactions.$senderId", FieldValue.delete())
-                } else {
-                    transaction.update(messageRef, "reactions.$senderId", reaction.key)
-                }
-            }.await()
+            val updateData = if (currentReactions[senderId] == reaction.key) {
+                // If the reaction exists, create an update to delete it.
+                mapOf("reactions.$senderId" to FieldValue.delete())
+            } else {
+                // Otherwise, create an update to add/change it.
+                mapOf("reactions.$senderId" to reaction.key)
+            }
+
+            // The update call will write to the local cache immediately.
+            messageRef.update(updateData).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -154,16 +157,19 @@ class ChatRepositoryImpl(
         val messageRef = firestore.collection("global_chat").document(messageId)
 
         return try {
-            firestore.runTransaction { transaction ->
-                val snapshot = transaction.get(messageRef)
-                val currentReactions = snapshot.get("reactions") as? Map<String, String> ?: emptyMap()
+            val document = messageRef.get().await()
+            val currentReactions = document.get("reactions") as? Map<String, String> ?: emptyMap()
 
-                if (currentReactions[senderId] == reaction.key) {
-                    transaction.update(messageRef, "reactions.$senderId", FieldValue.delete())
-                } else {
-                    transaction.update(messageRef, "reactions.$senderId", reaction.key)
-                }
-            }.await()
+            val updateData = if (currentReactions[senderId] == reaction.key) {
+                // If the reaction exists, prepare to delete it.
+                mapOf("reactions.$senderId" to FieldValue.delete())
+            } else {
+                // Otherwise, prepare to add or change it.
+                mapOf("reactions.$senderId" to reaction.key)
+            }
+
+            // The 'update' call writes to the local cache, triggering the UI to update.
+            messageRef.update(updateData).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
