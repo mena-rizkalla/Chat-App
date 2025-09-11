@@ -162,6 +162,12 @@ class ChatViewModel(
             val text = uiState.value.currentMessage
             val replyingTo = uiState.value.replyingToMessage
             if (text.isNotBlank()) {
+                _uiState.value = _uiState.value.copy(
+                    currentMessage = "", // Clear input
+                    replyingToMessage = null
+                )
+                textInputFlow.value = ""
+                updateTypingStatusUseCase(receiverId, false)
                 sendMessageUseCase(
                     receiverId,
                     text,
@@ -169,12 +175,6 @@ class ChatViewModel(
                     repliedToMessageText = replyingTo?.message?.text,
                     repliedToSenderId = replyingTo?.message?.senderId
                 )
-                _uiState.value = _uiState.value.copy(
-                    currentMessage = "", // Clear input
-                    replyingToMessage = null
-                )
-                textInputFlow.value = ""
-                updateTypingStatusUseCase(receiverId, false)
             }
         }
     }
@@ -246,12 +246,18 @@ class ChatViewModel(
     }
 
     private fun onConfirmEdit() {
-        viewModelScope.launch {
-            val messageToEdit = uiState.value.editingMessage
-            val newText = uiState.value.currentMessage
-            if (messageToEdit != null && newText.isNotBlank()) {
-                editMessageUseCase(receiverId, messageToEdit.message.messageId, newText)
-                onCancelEdit() // Clear the editing state
+        val messageToEdit = uiState.value.editingMessage
+        val newText = uiState.value.currentMessage
+
+        if (messageToEdit != null && newText.isNotBlank()) {
+            onCancelEdit() // Clear the editing state
+
+            viewModelScope.launch {
+                editMessageUseCase(
+                    receiverId = receiverId,
+                    messageId = messageToEdit.message.messageId,
+                    newText = newText // Use the saved text
+                )
             }
         }
     }
@@ -265,14 +271,16 @@ class ChatViewModel(
     }
 
     private fun onConfirmDelete() {
-        viewModelScope.launch {
-            val messageToDelete = uiState.value.messageForAction
-            if (messageToDelete != null) {
-                deleteMessageUseCase(receiverId, messageToDelete.message.messageId)
-                _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = false, messageForAction = null)
-            }
-            _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = false,messageForAction = null)
+        val messageToDelete = uiState.value.messageForAction
 
+        if (messageToDelete != null) {
+            _uiState.value = _uiState.value.copy(
+                showDeleteConfirmDialog = false,
+                messageForAction = null
+            )
+            viewModelScope.launch {
+                deleteMessageUseCase(receiverId, messageToDelete.message.messageId)
+            }
         }
     }
 }
