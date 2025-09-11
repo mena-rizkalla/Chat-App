@@ -8,6 +8,7 @@ import com.example.chatapp.domain.ChatRepository
 import com.example.chatapp.domain.GeminiRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import org.koin.dsl.module
 
 val appModule = module {
@@ -16,7 +17,14 @@ val appModule = module {
     single { FirebaseAuth.getInstance() }
 
     // Provides a singleton instance of FirebaseFirestore
-    single { FirebaseFirestore.getInstance() }
+    single {
+        val firestore = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .build()
+        firestore.firestoreSettings = settings
+        firestore
+    }
 
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
 
