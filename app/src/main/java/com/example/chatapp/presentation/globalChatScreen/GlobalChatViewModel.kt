@@ -119,21 +119,28 @@ class GlobalChatViewModel(
             val text = uiState.value.currentMessage
             val replyingTo = uiState.value.replyingToMessage
             if (text.isNotBlank()) {
+                _uiState.value = _uiState.value.copy(currentMessage = "",replyingToMessage = null) // Clear input
                 sendGlobalMessageUseCase(
                     text,
                     repliedToMessageId = replyingTo?.message?.messageId,
                     repliedToMessageText = replyingTo?.message?.text,
                     repliedToSenderId = replyingTo?.message?.senderId
                 )
-                _uiState.value = _uiState.value.copy(currentMessage = "",replyingToMessage = null) // Clear input
             }
         }
     }
 
-    private fun toggleReaction(reaction: Reaction) = viewModelScope.launch {
-        uiState.value.selectedMessageIdForReaction?.let { messageId ->
-            toggleReactionUseCase(messageId = messageId, reaction = reaction)
-            dismissReactionPalette() // Hide palette after selection
+    private fun toggleReaction(reaction: Reaction)  {
+        val messageId = uiState.value.selectedMessageIdForReaction
+
+        if (messageId != null) {
+            // 2. Dismiss the palette right away for an instant UI update
+            dismissReactionPalette()
+
+            // 3. Launch the network call in the background
+            viewModelScope.launch {
+                toggleReactionUseCase(messageId = messageId, reaction = reaction)
+            }
         }
     }
     private fun dismissReactionPalette() {
