@@ -2,7 +2,7 @@
 
 ![ChatApp Banner](https://placehold.co/1200x400/00639B/FFFFFF?text=ChatApp&font=poppins)
 
-**ChatApp** is a fully-featured, real-time messaging application for Android, built with the latest technologies. It showcases a modern, clean, and animated user interface following Material 3 design principles. Connect with users in private chats, join the global conversation, or even chat with a Gemini-powered AI!
+**ChatApp** is a fully-featured, real-time messaging application for Android, built with the latest technologies. It showcases a modern, clean, and animated user interface following Material 3 design principles. Connect with users in private chats, join the global conversation, or even chat with a Gemini-powered AI, all within a robust and scalable architecture.!
 
 ---
 
@@ -11,8 +11,14 @@
 - **🔒 Authentication**: Secure user sign-up and login using Firebase Authentication. Includes a "Forgot Password" flow.
 - **👤 User Directory**: Browse a list of all registered users to start new conversations.
 - **💬 Private & Global Chat**: Engage in one-on-one private messaging or join the public global chat room.
-- **🤖 AI Chat**: Have a conversation with Google's Gemini, integrated directly into the app.
-- **😍 Message Reactions**: React to messages with emojis (❤️, 👍, 😂, 😢, 😠).
+- **🤖 AI Chat & Smart Replies**: Have a conversation with Google's Gemini API and get AI-powered reply suggestions in your private chats.
+- **✍️ Full Message Control**:
+    - **Edit & Delete**: Easily correct typos or remove messages you've sent.
+    - **Reply to Message**: Swipe on any message to reply directly, providing context to your conversations.
+    - **Message Reactions**: React to messages with emojis (❤️, 👍, 😂, 😢, 😠).
+ - **👀 Real-time Presence**:
+      - **Typing Indicators**: See when the other user is typing in real-time.
+      - **Read Receipts**: Know when your messages have been seen with a double-check mark system (✔️✔️).
 - **🎨 Modern UI**: A beautiful and responsive UI built with Jetpack Compose and Material 3, supporting both light and dark themes.
 - **🚀 Real-time Communication**: Messages and reactions appear instantly thanks to Firebase Firestore's real-time listeners.
 - **✨ Fluid Animations**: Smooth and fluid animations for message appearance and UI transitions, enhancing the user experience.
@@ -36,14 +42,31 @@ This project leverages a modern Android development stack:
 
 - **UI**: [Jetpack Compose](https://developer.android.com/jetpack/compose) for building the UI declaratively with Kotlin.
 - **Architecture**: *Model-View-Intent (MVI)** using a single state object (`UiState`) and unidirectional data flow to ensure a predictable and maintainable state management.
+- **State Management**: Unidirectional Data Flow (UDF) within the ViewModels using Kotlin Flows and StateFlow.
 - **Dependency Injection**: [Koin](https://insert-koin.io/) for managing dependencies and injecting ViewModels.
 - **Backend**: [Firebase](https://firebase.google.com/)
     - **Firestore**: For real-time database functionality (messages, users, reactions).
     - **Authentication**: For handling user accounts.
 - **Asynchronous Programming**: Kotlin Coroutines and Flows for managing background tasks and handling data streams.
 - **Navigation**: [Jetpack Navigation for Compose](https://developer.android.com/jetpack/compose/navigation) to handle screen transitions.
+- **Automation (CI/CD)**:
+   - [GitHub Actions](https://github.com/features/actions) for automated testing and building.
+   - [Firebase App Distribution](https://firebase.google.com/products/app-distribution) for automated deployment to testers.
 
 ---
+## 🚀 CI/CD Pipeline
+
+A full CI/CD pipeline is configured using GitHub Actions (`.github/workflows/android_ci.yml`). On every push to the `develop` branch, the workflow automatically:
+
+1.  **Checks out** the latest code.
+2.  **Sets up** the Java and Android SDK environment.
+3.  **Caches** Gradle dependencies to speed up future builds.
+4.  **Runs** lint checks and unit tests to ensure code quality.
+5.  **Builds** a release-ready APK.
+6.  **Generates** automatic release notes from the latest commit messages.
+7.  **Uploads and distributes** the APK to testers via Firebase App Distribution.
+
+-----
 
 ## ⚙️ Setup & Installation
 
